@@ -6,10 +6,21 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { TestingModule } from './modules/testing/testing.module';
 import { BloggersPlatformModule } from './modules/bloggers-platform/bloggers-platform.module';
 import { CoreModule } from './core/core.module';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [
-    MongooseModule.forRoot('mongodb://localhost/nest-bloggers-platform'), //TODO: move to env. will be in the following lessons
+    ConfigModule.forRoot({
+      isGlobal: true, // делает process.env доступным везде
+      envFilePath: '.env', // можно указать явно
+    }),
+    MongooseModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        uri: configService.get<string>('MONGODB_URI'),
+      }),
+      inject: [ConfigService],
+    }),
     UserAccountsModule, //все модули должны быть заимпортированы в корневой модуль, либо напрямую, либо по цепочке (через другие модули)
     TestingModule,
     BloggersPlatformModule,
