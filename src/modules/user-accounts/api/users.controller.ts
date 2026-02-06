@@ -22,7 +22,6 @@ import { UsersService } from '../application/users.service';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  /** GET /users */
   @Get()
   async getAllUsers(
     @Query() query: UsersQueryFieldsType,
@@ -30,14 +29,12 @@ export class UsersController {
     return await this.usersService.getAllUsers(query);
   }
 
-  /** POST /users */
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async createUser(@Body() dto: CreateUserDto): Promise<IUserView> {
     return this.usersService.createUser(dto);
   }
 
-  /** DELETE /users/:id */
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteUser(@Param('id') id: string): Promise<void> {
@@ -46,7 +43,6 @@ export class UsersController {
     }
 
     const user = await this.usersService.deleteUser(id);
-    // usersService.deleteUser уже кидает NotFoundException если не найден
     return;
   }
 }

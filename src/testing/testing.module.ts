@@ -20,9 +20,6 @@ import {
   LikeSchema,
 } from '../modules/bloggers-platform/domain/like.entity';
 
-// Импортируем все нужные схемы
-
-// ... остальные схемы
 
 @Module({
   imports: [
@@ -32,11 +29,10 @@ import {
       { name: Comment.name, schema: CommentSchema },
       { name: User.name, schema: UserSchema },
       { name: Like.name, schema: LikeSchema },
-      // ... все остальные сущности, которые чистишь
     ]),
   ],
   controllers: [TestingController],
   providers: [TestingService],
-  // Если хочешь использовать этот сервис где-то ещё — exports: [TestingService]
+  // exports: [TestingService]
 })
 export class TestingModule {}

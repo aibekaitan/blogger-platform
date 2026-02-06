@@ -29,7 +29,6 @@ export class PostService {
     private readonly blogRepository: BlogsRepository,
   ) {}
 
-  /** GET /posts - возвращает все посты с пагинацией */
   async getAllPosts(query: any, currentUserId?: string) {
     const pageNumber = Number(query.pageNumber) || 1;
     const pageSize = Number(query.pageSize) || 10;
@@ -42,14 +41,12 @@ export class PostService {
     );
   }
 
-  /** GET /posts/:id - возвращает пост по id */
   async getPostById(postId: string, currentUserId?: string) {
     const post = await this.postRepository.findById(postId, currentUserId);
     if (!post) return null;
     return post;
   }
 
-  /** POST /posts - создание нового поста */
   async createPost(dto: PostInputModel) {
     const blog = await this.blogRepository.findById(dto.blogId);
 
@@ -60,7 +57,6 @@ export class PostService {
     return this.postRepository.create(dto, blog.name);
   }
 
-  /** GET /posts/:postId/comments - получение комментариев поста с пагинацией */
   async getCommentsByPostId(
     postId: string,
     query: CommentsQueryFieldsType,
@@ -83,7 +79,6 @@ export class PostService {
     );
   }
 
-  /** POST /posts/:postId/comments - создание комментария (Auth можно пока пропустить) */
   async createComment(
     postId: string,
     dto: CommentInputModel,

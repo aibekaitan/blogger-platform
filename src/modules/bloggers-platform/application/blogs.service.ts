@@ -49,7 +49,7 @@ export class BlogsService {
     return this.blogsRepository.delete(id);
   }
 
-  // ⭐ find posts by blog
+
   async findPostsByBlogId(blogId: string, query: BaseQueryParams) {
     const result = await this.blogsRepository.findPostsByBlogId(blogId, {
       pageNumber: query.pageNumber,
@@ -67,7 +67,6 @@ export class BlogsService {
     return result;
   }
 
-  // ⭐ create post inside blog
   async createByBlogId(blogId: string, dto: PostInputModel) {
     const blog = await this.blogsRepository.findById(blogId);
     if (!blog) return null;

@@ -34,8 +34,6 @@ export class PostRepository {
     private readonly usersRepository: UsersRepository,
   ) {}
 
-  /* ================= GET ALL POSTS ================= */
-
   async findAll(
     params: {
       pageNumber: number;
@@ -100,8 +98,6 @@ export class PostRepository {
     };
   }
 
-  /* ================= FIND POST ================= */
-
   async findById(id: string, currentUserId?: string): Promise<PostType | null> {
     const dbPost = await this.postModel.findOne({ id }).lean();
 
@@ -134,8 +130,6 @@ export class PostRepository {
     };
   }
 
-  /* ================= CREATE POST ================= */
-
   async create(dto: PostInputModelType, blogName: string): Promise<PostType> {
     const createdAt = new Date().toISOString();
 
@@ -166,8 +160,6 @@ export class PostRepository {
     };
   }
 
-  /* ================= CREATE COMMENT ================= */
-
   async createComment(
     dto: CommentInputModel,
     postId: string,
@@ -193,8 +185,6 @@ export class PostRepository {
     return comment;
   }
 
-  /* ================= UPDATE POST ================= */
-
   async update(id: string, dto: PostInputModelType): Promise<UpdateResult> {
     return this.postModel.updateOne(
       { id },
@@ -209,13 +199,9 @@ export class PostRepository {
     );
   }
 
-  /* ================= DELETE POST ================= */
-
   async delete(id: string): Promise<DeleteResult> {
     return this.postModel.deleteOne({ id });
   }
-
-  /* ================= LIKE STATUS ================= */
 
   async setLikeStatus(postId: string, userId: string, likeStatus: LikeStatus) {
     const user = await this.usersRepository.findById(userId);
@@ -235,7 +221,6 @@ export class PostRepository {
 
     const postUpdate: Record<string, unknown> = {};
 
-    /* remove previous */
     if (prevStatus === LikeStatus.Like) {
       postUpdate['$inc'] = { 'extendedLikesInfo.likesCount': -1 };
       postUpdate['$pull'] = { 'extendedLikesInfo.newestLikes': { userId } };
@@ -245,7 +230,6 @@ export class PostRepository {
       postUpdate['$inc'] = { 'extendedLikesInfo.dislikesCount': -1 };
     }
 
-    /* add new */
     if (likeStatus === LikeStatus.Like) {
       postUpdate['$inc'] = {
         ...(postUpdate['$inc'] as object),
@@ -277,7 +261,6 @@ export class PostRepository {
       await this.postModel.updateOne({ id: postId }, postUpdate);
     }
 
-    /* update like collection */
     if (likeStatus === LikeStatus.None) {
       await this.likeModel.deleteOne({
         parentId: postId,

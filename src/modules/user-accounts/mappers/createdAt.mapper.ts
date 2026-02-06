@@ -9,7 +9,7 @@ export class UserViewModel {
 
   static fromDomain(user: UserDocument): UserViewModel {
     return {
-      id: user.id, // или user._id.toString() если используешь _id
+      id: user.id, // user._id.toString()
       login: user.login,
       email: user.email,
       createdAt: user.createdAt.toISOString(),

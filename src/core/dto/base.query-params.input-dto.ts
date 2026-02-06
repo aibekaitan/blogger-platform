@@ -49,16 +49,18 @@ export class BaseQueryParams {
   })
   sortDirection = SortDirection.Desc;
 
-  /**
-   * Удобный метод для skip в MongoDB (.skip())
-   */
+  @ApiPropertyOptional({
+    description: 'Search blogs by name',
+    example: 'tech',
+  })
+  @IsOptional()
+  @IsString()
+  searchNameTerm?: string;
+
   calculateSkip(): number {
     return (this.pageNumber - 1) * this.pageSize;
   }
 
-  /**
-   * Удобный метод для sort-объекта в MongoDB
-   */
   getSortObject(): Record<string, 1 | -1> {
     const direction = this.sortDirection === SortDirection.Asc ? 1 : -1;
     return { [this.sortBy]: direction };

@@ -21,13 +21,12 @@ import { CommentService } from '../application/comments.service';
 export class CommentsController {
   constructor(private readonly commentService: CommentService) {}
 
-  // GET /comments/:id
   @Get(':id')
   async getCommentById(
     @Param('id') id: string,
     @Req() req: Request,
   ): Promise<CommentViewModel> {
-    const currentUserId = req.user?.id; // если авторизация есть
+    const currentUserId = req.user?.id; // TODO: if authorization added
     const comment = await this.commentService.getCommentById(id, currentUserId);
     if (!comment) {
       throw new NotFoundException('Comment not found');
@@ -35,14 +34,14 @@ export class CommentsController {
     return comment;
   }
 
-  /*// DELETE /comments/:id
+  /*
   @Delete(':id')
   @HttpCode(204)
   async deleteComment(@Param('id') id: string): Promise<void> {
     await this.commentService.delete(id);
   }
 
-  // PUT /comments/:id
+
   @Put(':id')
   @HttpCode(204)
   async updateComment(
@@ -52,7 +51,7 @@ export class CommentsController {
     await this.commentService.update(id, dto);
   }
 
-  // PUT /comments/:id/like-status
+
   @Put(':id/like-status')
   @HttpCode(204)
   async setLikeStatus(

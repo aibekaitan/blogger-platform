@@ -11,30 +11,25 @@ export class UsersRepository {
     private readonly userModel: Model<UserDocument>,
   ) {}
 
-  /** Создание нового пользователя */
   async create(user: Partial<User>): Promise<string> {
     const newUser = new this.userModel(user);
     const savedUser = await newUser.save();
     return savedUser._id.toString();
   }
 
-  /** Удаление пользователя по id */
   async delete(id: string): Promise<boolean> {
     const result = await this.userModel.deleteOne({ _id: id });
     return result.deletedCount === 1;
   }
 
-  /** Найти пользователя по id (plain object) */
   async findById(id: string): Promise<UserDocument | null> {
     return this.userModel.findById(id).select('-__v').lean().exec();
   }
 
-  /** Сохранение изменений пользователя */
   async save(user: UserDocument): Promise<void> {
     await user.save();
   }
 
-  /** Найти пользователя по логину или email */
   async findByLoginOrEmail(loginOrEmail: string): Promise<UserDocument | null> {
     return this.userModel
       .findOne({ $or: [{ email: loginOrEmail }, { login: loginOrEmail }] })
@@ -43,7 +38,6 @@ export class UsersRepository {
       .exec();
   }
 
-  /** Проверка существования пользователя по логину или email */
   async doesExistByLoginOrEmail(
     login: string,
     email: string,
@@ -55,7 +49,6 @@ export class UsersRepository {
     return !!user;
   }
 
-  /** Обновление refreshToken */
   async updateRefreshToken(userId: string, token: string): Promise<void> {
     await this.userModel.updateOne(
       { _id: userId },
@@ -63,7 +56,6 @@ export class UsersRepository {
     );
   }
 
-  /** Обновление подтверждения email */
   async updateConfirmation(_id: ObjectId): Promise<UpdateResult> {
     return this.userModel.updateOne(
       { _id },
@@ -71,7 +63,6 @@ export class UsersRepository {
     );
   }
 
-  /** Обновление пароля */
   async updatePassword(
     _id: ObjectId,
     newPassword: string,
@@ -82,7 +73,6 @@ export class UsersRepository {
     );
   }
 
-  /** Обновление кода восстановления пароля */
   async updatePasswordRecoveryCode(
     _id: ObjectId,
     newCode: string,
@@ -93,7 +83,6 @@ export class UsersRepository {
     );
   }
 
-  /** Обновление кода подтверждения email */
   async updateConfirmationCode(
     _id: ObjectId,
     newCode: string,
@@ -104,7 +93,6 @@ export class UsersRepository {
     );
   }
 
-  /** Найти пользователя по коду подтверждения email */
   async findUserByConfirmationCode(
     emailConfirmationCode: string,
   ): Promise<UserDocument | null> {
@@ -115,7 +103,6 @@ export class UsersRepository {
       .exec();
   }
 
-  /** Найти пользователя по коду восстановления пароля */
   async findUserByPasswordRecoveryCode(
     passwordRecoveryCode: string,
   ): Promise<UserDocument | null> {

@@ -32,7 +32,7 @@ export class Like {
   @Prop({ type: String, default: 'Comment' })
   parentType: string;
 
-  // виртуальное поле (если нужен)
+
   get id(): string {
     return this._id?.toString();
   }
@@ -56,7 +56,6 @@ export class Like {
 export const LikeSchema = SchemaFactory.createForClass(Like);
 LikeSchema.loadClass(Like);
 
-// Индекс на уникальность (автор + родитель)
 LikeSchema.index({ authorId: 1, parentId: 1, parentType: 1 }, { unique: true });
 
 export type LikeDocument = HydratedDocument<Like>;

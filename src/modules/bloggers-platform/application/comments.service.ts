@@ -15,7 +15,6 @@ export class CommentService {
     private readonly postQueryRepository: PostQueryRepository,
   ) {}
 
-  // Получить комментарий по id с учетом текущего пользователя
   async getCommentById(
     commentId: string,
     currentUserId?: string,
@@ -26,7 +25,6 @@ export class CommentService {
     return this.postQueryRepository._getInViewComment(comment, currentUserId);
   }
 
-  // Удалить комментарий
   async delete(commentId: string): Promise<boolean> {
     const comment = await this.commentRepository.findById(commentId);
     if (!comment) return false;
@@ -34,12 +32,10 @@ export class CommentService {
     return await this.commentRepository.delete(commentId);
   }
 
-  // Обновить комментарий
   async update(commentId: string, dto: CommentInputModel): Promise<void> {
     await this.commentRepository.update(commentId, dto);
   }
 
-  // Проверка существования комментария
   async findById(commentId: string) {
     const comment = await this.commentRepository.findById(commentId);
     if (!comment) return false;
@@ -47,7 +43,6 @@ export class CommentService {
     return comment;
   }
 
-  // Установить статус лайка/дизлайка
   async setLikeStatus(
     commentId: string,
     userId: string,

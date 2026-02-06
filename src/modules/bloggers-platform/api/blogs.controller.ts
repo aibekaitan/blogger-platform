@@ -34,15 +34,14 @@ export class BlogsController {
     const skip = queryParams.calculateSkip();
     const sort = queryParams.getSortObject();
 
-    // Если есть searchNameTerm — добавь в DTO и здесь
-    // const searchNameTerm = queryParams.searchNameTerm || null;
+    const searchNameTerm = queryParams.searchNameTerm || null;
 
     const result = await this.blogsService.findAllBlogs({
       pageNumber,
       pageSize,
       sortBy,
       sortDirection,
-      // searchNameTerm, // если добавишь
+      searchNameTerm,
     });
 
     return result; // { pagesCount, page, pageSize, totalCount, items }
@@ -75,7 +74,7 @@ export class BlogsController {
       throw new NotFoundException('Blog not found');
     }
 
-    return blog; // или mapToBlogOutput(blog) если нужно
+    return blog; // mapToBlogOutput(blog)
   }
 
   @Post()
@@ -83,7 +82,7 @@ export class BlogsController {
   @ApiOperation({ summary: 'Create new blog' })
   async createBlog(@Body() createBlogDto: BlogInputModel) {
     const newBlog = await this.blogsService.create(createBlogDto);
-    return newBlog; // или mapToBlogOutput(newBlog)
+    return newBlog; // mapToBlogOutput(newBlog)
   }
 
   @Post(':blogId/posts')
@@ -91,7 +90,7 @@ export class BlogsController {
   @ApiOperation({ summary: 'Create post for specific blog' })
   async createPostByBlogId(
     @Param('blogId') blogId: string,
-    @Body() createPostDto: PostInputModel, // создай этот DTO
+    @Body() createPostDto: PostInputModel,
   ) {
     const newPost = await this.blogsService.createByBlogId(
       blogId,

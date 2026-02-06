@@ -29,8 +29,8 @@ export class PostInputModel {
   @Length(3, 1000)
   content: string;
 
-  // если нужно проверять blogId (MongoDB ObjectId)
+
   @ApiProperty({ example: '507f1f77bcf86cd799439011' })
   @IsMongoId({ message: 'Invalid blogId format' })
-  blogId: string; // ← если передаёшь в body (для POST /posts)
+  blogId: string;
 }

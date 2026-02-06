@@ -31,12 +31,9 @@ export class Comment {
   })
   commentatorInfo: ICommentatorInfo;
 
-  // createdAt будет автоматически (Date), если используем timestamps
-  // если нужен string ISO — оставляем вручную
   @Prop({ type: String, required: true })
   createdAt: string;
 
-  // виртуальное поле
   get stringId(): string {
     return this._id?.toString();
   }

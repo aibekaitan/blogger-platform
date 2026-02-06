@@ -24,13 +24,11 @@ import { PostInputModel } from '../dto/input-dto/post.input';
 export class PostController {
   constructor(private readonly postService: PostService) {}
 
-  /** GET /posts — получить все посты */
   @Get()
   async getAllPosts(@Query() query: any) {
     return this.postService.getAllPosts(query);
   }
 
-  /** GET /posts/:id — получить пост по id */
   @Get(':id')
   async getPostById(@Param('id') id: string): Promise<PostType> {
     const post = await this.postService.getPostById(id);
@@ -39,15 +37,12 @@ export class PostController {
     return post;
   }
 
-  /** POST /posts — создать новый пост */
   @Post()
   async createPost(@Body() dto: PostInputModel): Promise<PostType> {
-    // blogName временно ставим из dto или можно из другого источника
     // const blogName = dto.blogName || 'Unknown Blog';
     return this.postService.createPost(dto);
   }
 
-  /** GET /posts/:postId/comments — получить комментарии поста */
   @Get(':postId/comments')
   async getCommentsByPostId(
     @Param('postId') postId: string,

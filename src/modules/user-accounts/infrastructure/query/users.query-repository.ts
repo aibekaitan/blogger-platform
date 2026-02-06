@@ -19,7 +19,6 @@ export class UsersQueryRepository {
     private readonly userModel: Model<UserDocument>,
   ) {}
 
-  /** Получение всех пользователей с фильтрацией и пагинацией */
   async findAllUsers(
     sortQueryDto: SortQueryFilterType,
   ): Promise<IPagination<IUserView[]>> {
@@ -64,7 +63,6 @@ export class UsersQueryRepository {
     };
   }
 
-  /** Получение одного пользователя по ID */
   async getByIdOrNotFoundFail(id: string): Promise<IUserView> {
     if (!Types.ObjectId.isValid(id)) throw new Error('Invalid user ID');
 
@@ -80,7 +78,6 @@ export class UsersQueryRepository {
     return this._toUserView(user);
   }
 
-  /** Метод для IUserView */
   private _toUserView(user: IUserDB & { _id: Types.ObjectId }): IUserView {
     return {
       id: user._id.toString(),
@@ -90,7 +87,6 @@ export class UsersQueryRepository {
     };
   }
 
-  /** Метод для IUserView2 */
   private _toUserView2(user: IUserDB & { _id: Types.ObjectId }): IUserView2 {
     return {
       userId: user._id.toString(),
@@ -99,7 +95,6 @@ export class UsersQueryRepository {
     };
   }
 
-  /** Проверка валидности ObjectId */
   private _checkObjectId(id: string): boolean {
     return Types.ObjectId.isValid(id);
   }

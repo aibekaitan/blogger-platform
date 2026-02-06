@@ -15,7 +15,6 @@ export class UsersService {
     private readonly bcryptService: BcryptService,
   ) {}
 
-  /** Получение всех пользователей с пагинацией и фильтрацией */
   async getAllUsers(
     query: UsersQueryFieldsType,
   ): Promise<IPagination<IUserView[]>> {
@@ -29,7 +28,6 @@ export class UsersService {
     });
   }
 
-  /** Создание нового пользователя */
   async createUser(dto: CreateUserDto): Promise<IUserView> {
     const passwordHash = await this.bcryptService.generateHash(dto.password);
 
@@ -42,7 +40,6 @@ export class UsersService {
 
     const userId = await this.userRepository.create(newUser);
 
-    // Получаем только “плоский” пользовательский объект
     const userView =
       await this.userQueryRepository.getByIdOrNotFoundFail(userId);
 
@@ -54,7 +51,6 @@ export class UsersService {
     };
   }
 
-  /** Удаление пользователя */
   async deleteUser(id: string): Promise<void> {
     const user = await this.userRepository.findById(id);
     if (!user) throw new NotFoundException('User not found');
@@ -62,7 +58,6 @@ export class UsersService {
     await this.userRepository.delete(id);
   }
 
-  /** Обновление пользователя */
   async updateUser(id: string, dto: UpdateUserDto): Promise<IUserView> {
     const user = await this.userRepository.findById(id);
     if (!user) throw new NotFoundException('User not found');

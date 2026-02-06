@@ -23,18 +23,15 @@ export class CommentRepository {
     private readonly likeModel: Model<LikeDocument>,
   ) {}
 
-  // Удаление комментария
   async delete(id: string): Promise<boolean> {
     const result = await this.commentModel.deleteOne({ id }).exec();
     return result.deletedCount === 1;
   }
 
-  // Найти комментарий по id (для внутреннего использования)
   async findById(id: string): Promise<CommentDB | null> {
     return this.commentModel.findOne({ id }).select('-__v').lean().exec();
   }
 
-  // Найти комментарий по id и собрать view модель с лайками
   async findByIdWithLikes(
     id: string,
     currentUserId?: string,
@@ -81,14 +78,12 @@ export class CommentRepository {
     };
   }
 
-  // Обновление комментария
   async update(id: string, dto: CommentInputModel): Promise<void> {
     await this.commentModel
       .updateOne({ id }, { $set: { content: dto.content } })
       .exec();
   }
 
-  // Установка лайка/дизлайка
   async setLikeStatus(
     commentId: string,
     userId: string,

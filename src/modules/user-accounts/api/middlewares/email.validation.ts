@@ -24,7 +24,7 @@ import {
 } from 'class-validator';
 import { UsersRepository } from '../../infrastructure/users.repository';
 
-// --- кастомный валидатор для уникального email ---
+
 @ValidatorConstraint({ async: true })
 @Injectable()
 export class IsEmailUnique implements ValidatorConstraintInterface {
@@ -32,7 +32,7 @@ export class IsEmailUnique implements ValidatorConstraintInterface {
 
   async validate(email: string, args: ValidationArguments) {
     const user = await this.usersRepository.findByLoginOrEmail(email);
-    return !user; // true если email свободен, false если уже существует
+    return !user;
   }
 
   defaultMessage(args: ValidationArguments) {
@@ -40,12 +40,12 @@ export class IsEmailUnique implements ValidatorConstraintInterface {
   }
 }
 
-// --- DTO для создания пользователя ---
+
 export class CreateUserDto {
   @IsNotEmpty()
   @IsEmail({}, { message: 'Email is not correct' })
   @Validate(IsEmailUnique)
   email: string;
 
-  // Другие поля, например login, password и т.д.
+  // TODO: Другие поля, например login, password и т.д.
 }

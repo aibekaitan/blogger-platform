@@ -41,7 +41,6 @@ export class BlogsRepository {
     return res.deletedCount === 1;
   }
 
-  // ⭐ find all blogs
   async findAllBlogs(params: {
     pageNumber: number;
     pageSize: number;
@@ -74,7 +73,6 @@ export class BlogsRepository {
     };
   }
 
-  // ⭐ posts by blog id
   async findPostsByBlogId(
     blogId: string,
     params: {
@@ -107,7 +105,6 @@ export class BlogsRepository {
     };
   }
 
-  // ⭐ create post inside blog
   async createPostByBlogId(
     blog: BlogDocument,
     dto: PostInputModel,
