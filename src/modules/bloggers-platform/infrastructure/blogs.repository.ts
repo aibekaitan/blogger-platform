@@ -6,6 +6,7 @@ import { Post, PostDocument } from '../domain/post.entity';
 import type { PostModelType } from '../domain/post.entity';
 import { PostInputModel } from '../dto/input-dto/post.input';
 import { v4 as uuidv4 } from 'uuid';
+import { mapBlogToView } from '../api/middlewares/blog.mapper';
 @Injectable()
 export class BlogsRepository {
   constructor(
@@ -69,7 +70,7 @@ export class BlogsRepository {
       page: pageNumber,
       pageSize,
       totalCount,
-      items,
+      items: items.map(mapBlogToView),
     };
   }
 

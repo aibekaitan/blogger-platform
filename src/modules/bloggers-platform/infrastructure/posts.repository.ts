@@ -18,7 +18,8 @@ import { Like, LikeDocument, LikeStatus } from '../domain/like.entity';
 import { CommentDB, CommentInputModel } from '../dto/comments.dto';
 import { PostType } from '../types/post';
 import { PostInputModelType } from '../types/post.input.type';
-
+import { v4 as uuidv4 } from 'uuid';
+import { mapPostToView } from '../api/middlewares/posts.mapper';
 @Injectable()
 export class PostRepository {
   constructor(
@@ -42,7 +43,7 @@ export class PostRepository {
       sortDirection: string;
     },
     currentUserId?: string,
-  ): Promise<PostPaginator> {
+  ) {
     const { pageNumber, pageSize, sortBy, sortDirection } = params;
     const direction = sortDirection === 'asc' ? 1 : -1;
 
@@ -94,7 +95,7 @@ export class PostRepository {
       page: pageNumber,
       pageSize,
       totalCount,
-      items,
+      items: items.map(mapPostToView),
     };
   }
 
@@ -134,7 +135,7 @@ export class PostRepository {
     const createdAt = new Date().toISOString();
 
     const post: PostType = {
-      id: createdAt,
+      id: uuidv4(),
       title: dto.title,
       shortDescription: dto.shortDescription,
       content: dto.content,
