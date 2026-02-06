@@ -29,8 +29,7 @@ export class PostInputModel {
   @Length(3, 1000)
   content: string;
 
-
   @ApiProperty({ example: '507f1f77bcf86cd799439011' })
-  @IsMongoId({ message: 'Invalid blogId format' })
+  // @IsMongoId({ message: 'Invalid blogId format' })
   blogId: string;
 }

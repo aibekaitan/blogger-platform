@@ -3,7 +3,7 @@ import { BlogsRepository } from '../infrastructure/blogs.repository';
 import { BlogInputModel } from '../dto/input-dto/blog.input';
 import { PostInputModel } from '../dto/input-dto/post.input';
 import { BaseQueryParams } from '../../../core/dto/base.query-params.input-dto';
-
+import { v4 as uuidv4 } from 'uuid';
 @Injectable()
 export class BlogsService {
   constructor(private readonly blogsRepository: BlogsRepository) {}
@@ -24,7 +24,7 @@ export class BlogsService {
 
   async create(dto: BlogInputModel) {
     return this.blogsRepository.create({
-      id: new Date().toISOString(),
+      id: uuidv4(),
       name: dto.name,
       description: dto.description,
       websiteUrl: dto.websiteUrl,

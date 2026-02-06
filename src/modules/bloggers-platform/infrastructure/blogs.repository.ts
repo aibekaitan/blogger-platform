@@ -5,7 +5,7 @@ import type { BlogModelType } from '../domain/blog.entity';
 import { Post, PostDocument } from '../domain/post.entity';
 import type { PostModelType } from '../domain/post.entity';
 import { PostInputModel } from '../dto/input-dto/post.input';
-
+import { v4 as uuidv4 } from 'uuid';
 @Injectable()
 export class BlogsRepository {
   constructor(
@@ -110,7 +110,7 @@ export class BlogsRepository {
     dto: PostInputModel,
   ): Promise<PostDocument> {
     const post = new this.PostModel({
-      id: new Date().toISOString(),
+      id: uuidv4(),
       title: dto.title,
       shortDescription: dto.shortDescription,
       content: dto.content,
