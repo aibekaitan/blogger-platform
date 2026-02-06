@@ -1,135 +1,83 @@
-import { Schema, Prop, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Model } from 'mongoose';
-import { UpdateUserDto } from '../dto/create-user.dto';
-import { CreateUserDomainDto } from './dto/create-user.domain.dto';
-import { Name, NameSchema } from './name.schema';
+// src/user-accounts/domain/user.entity.ts
 
-//флаг timestemp автоматичеки добавляет поля upatedAt и createdAt
-/**
- * User Entity Schema
- * This class represents the schema and behavior of a User entity.
- */
-@Schema({ timestamps: true })
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { HydratedDocument, Model, Types } from 'mongoose';
+
+@Schema({
+  versionKey: false,
+  timestamps: { createdAt: true, updatedAt: false }, // createdAt будет Date
+})
 export class User {
   /**
-   * Login of the user (must be uniq)
-   * @type {string}
-   * @required
+   * Уникальный строковый идентификатор (обычно uuid)
    */
-  @Prop({ type: String, required: true })
+  @Prop({ type: String, required: true, unique: true })
+  id: string;
+
+  /**
+   * Логин пользователя (уникальный)
+   */
+  @Prop({ type: String, required: true, unique: true, trim: true })
   login: string;
 
   /**
-   * Password hash for authentication
-   * @type {string}
-   * @required
+   * Email пользователя (уникальный)
+   */
+  @Prop({
+    type: String,
+    required: true,
+    unique: true,
+    trim: true,
+    lowercase: true,
+  })
+  email: string;
+
+  /**
+   * Хэш пароля (пока оставляем, даже если auth не мигрируем)
    */
   @Prop({ type: String, required: true })
   passwordHash: string;
 
-  /**
-   * Email of the user
-   * @type {string}
-   * @required
-   */
-  @Prop({ type: String, min: 5, required: true })
-  email: string;
-
-  /**
-   * Email confirmation status (if not confirmed in 2 days account will be deleted)
-   * @type {boolean}
-   * @default false
-   */
-  @Prop({ type: Boolean, required: true, default: false })
-  isEmailConfirmed: boolean;
-
-  // @Prop(NameSchema) this variant from docdoesn't make validation for inner object
-  @Prop({ type: NameSchema })
-  name: Name;
-
-  /**
-   * Creation timestamp
-   * Explicitly defined despite timestamps: true
-   * properties without @Prop for typescript so that they are in the class instance (or in instance methods)
-   * @type {Date}
-   */
+  // createdAt и updatedAt добавляются автоматически благодаря timestamps
+  // но в ViewModel нужен string ISO → будем преобразовывать в сервисе/маппере
   createdAt: Date;
-  updatedAt: Date;
-
   /**
-   * Deletion timestamp, nullable, if date exist, means entity soft deleted
-   * @type {Date | null}
+   * Виртуальное поле для получения id как строки
+   * (если где-то нужен _id.toString())
    */
-  @Prop({ type: Date, nullable: true })
-  deletedAt: Date | null;
-
-  /**
-   * Virtual property to get the stringified ObjectId
-   * @returns {string} The string representation of the ID
-   * если ипсльзуете по всей системе шв айди как string, можете юзать, если id
-   */
-  get id() {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return,@typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
-    return this._id.toString();
+  get idString(): string {
+    return this._id?.toString();
   }
 
+  // Добавляем поле, чтобы TypeScript не ругался на this._id
+  _id: Types.ObjectId;
+
   /**
-   * Factory method to create a User instance
-   * @param {CreateUserDto} dto - The data transfer object for user creation
-   * @returns {UserDocument} The created user document
-   * DDD started: как создать сущность, чтобы она не нарушала бизнес-правила? Делегируем это создание статическому методу
+   * Фабричный метод создания пользователя
+   * (используется в сервисе при регистрации)
    */
-  static createInstance(dto: CreateUserDomainDto): UserDocument {
+  static createInstance(dto: {
+    id: string; // генерируем uuid
+    login: string;
+    email: string;
+    passwordHash: string;
+  }): User {
     const user = new this();
-    user.email = dto.email;
+    user.id = dto.id;
+    user.login = dto.login.trim();
+    user.email = dto.email.trim().toLowerCase();
     user.passwordHash = dto.passwordHash;
-    user.login = dto.login;
-    user.isEmailConfirmed = false; // пользователь ВСЕГДА должен после регистрации подтверждить свой Email
-
-    user.name = {
-      firstName: 'firstName xxx',
-      lastName: 'lastName yyy',
-    };
-
-    return user as UserDocument;
-  }
-
-  /**
-   * Marks the user as deleted
-   * Throws an error if already deleted
-   * @throws {Error} If the entity is already deleted
-   * DDD сontinue: инкапсуляция (вызываем методы, которые меняют состояние\св-ва) объектов согласно правилам этого объекта
-   */
-  makeDeleted() {
-    if (this.deletedAt !== null) {
-      throw new Error('Entity already deleted');
-    }
-    this.deletedAt = new Date();
-  }
-
-  /**
-   * Updates the user instance with new data
-   * Resets email confirmation if email is updated
-   * @param {UpdateUserDto} dto - The data transfer object for user updates
-   * DDD сontinue: инкапсуляция (вызываем методы, которые меняют состояние\св-ва) объектов согласно правилам этого объекта
-   */
-  update(dto: UpdateUserDto) {
-    if (dto.email !== this.email) {
-      this.isEmailConfirmed = false;
-      this.email = dto.email;
-    }
+    // createdAt будет автоматически от timestamps
+    return user;
   }
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
-
-//регистрирует методы сущности в схеме
 UserSchema.loadClass(User);
 
-//Типизация документа
+// Типы
 export type UserDocument = HydratedDocument<User>;
 
-//Типизация модели + статические методы
+// Если нужны статические методы на уровне модели
 export type UserModelType = Model<UserDocument> & typeof User;
+UserSchema.loadClass(User);

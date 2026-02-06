@@ -1,51 +1,84 @@
-import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import type { UserModelType } from '../domain/user.entity';
-import { User } from '../domain/user.entity';
-import { CreateUserDto, UpdateUserDto } from '../dto/create-user.dto';
-import bcrypt from 'bcrypt';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { UsersRepository } from '../infrastructure/users.repository';
+import { UsersQueryRepository } from '../infrastructure/query/users.query-repository';
+import { BcryptService } from '../adapters/bcrypt.service';
+import { CreateUserDto, UpdateUserDto } from '../dto/create-user.dto';
+import { IPagination } from '../../../common/types/pagination';
+import { UsersQueryFieldsType } from '../types/users.queryFields.type';
+import { IUserView } from '../types/user.view.interface';
 
 @Injectable()
 export class UsersService {
   constructor(
-    //инжектирование модели в сервис через DI
-    @InjectModel(User.name)
-    private UserModel: UserModelType,
-    private usersRepository: UsersRepository,
+    private readonly userRepository: UsersRepository,
+    private readonly userQueryRepository: UsersQueryRepository,
+    private readonly bcryptService: BcryptService,
   ) {}
 
-  async createUser(dto: CreateUserDto): Promise<string> {
-    //TODO: move to bcrypt service
-    const passwordHash = await bcrypt.hash(dto.password, 10);
-
-    const user = this.UserModel.createInstance({
-      email: dto.email,
-      login: dto.login,
-      passwordHash: passwordHash,
+  /** Получение всех пользователей с пагинацией и фильтрацией */
+  async getAllUsers(
+    query: UsersQueryFieldsType,
+  ): Promise<IPagination<IUserView[]>> {
+    return this.userQueryRepository.findAllUsers({
+      searchLoginTerm: query.searchLoginTerm,
+      searchEmailTerm: query.searchEmailTerm,
+      pageNumber: Number(query.pageNumber) || 1,
+      pageSize: Number(query.pageSize) || 10,
+      sortBy: query.sortBy ?? 'createdAt',
+      sortDirection: query.sortDirection === 'asc' ? 1 : -1,
     });
-
-    await this.usersRepository.save(user);
-
-    return user._id.toString();
-  }
-  async updateUser(id: string, dto: UpdateUserDto): Promise<string> {
-    const user = await this.usersRepository.findOrNotFoundFail(id);
-
-    // не присваиваем св-ва сущностям напрямую в сервисах! даже для изменения одного св-ва
-    // создаём метод
-    user.update(dto); // change detection
-
-    await this.usersRepository.save(user);
-
-    return user._id.toString();
   }
 
-  async deleteUser(id: string) {
-    const user = await this.usersRepository.findOrNotFoundFail(id);
+  /** Создание нового пользователя */
+  async createUser(dto: CreateUserDto): Promise<IUserView> {
+    const passwordHash = await this.bcryptService.generateHash(dto.password);
 
-    user.makeDeleted();
+    const newUser = {
+      login: dto.login,
+      email: dto.email,
+      passwordHash,
+      createdAt: new Date(),
+    };
 
-    await this.usersRepository.save(user);
+    const userId = await this.userRepository.create(newUser);
+
+    // Получаем только “плоский” пользовательский объект
+    const userView =
+      await this.userQueryRepository.getByIdOrNotFoundFail(userId);
+
+    return {
+      id: userView.id,
+      login: userView.login,
+      email: userView.email,
+      createdAt: new Date(userView.createdAt).toISOString(),
+    };
+  }
+
+  /** Удаление пользователя */
+  async deleteUser(id: string): Promise<void> {
+    const user = await this.userRepository.findById(id);
+    if (!user) throw new NotFoundException('User not found');
+
+    await this.userRepository.delete(id);
+  }
+
+  /** Обновление пользователя */
+  async updateUser(id: string, dto: UpdateUserDto): Promise<IUserView> {
+    const user = await this.userRepository.findById(id);
+    if (!user) throw new NotFoundException('User not found');
+
+    if (dto.email) user.email = dto.email;
+
+    await this.userRepository.save(user);
+
+    const updatedView =
+      await this.userQueryRepository.getByIdOrNotFoundFail(id);
+
+    return {
+      id: updatedView.id,
+      login: updatedView.login,
+      email: updatedView.email,
+      createdAt: new Date(updatedView.createdAt).toISOString(),
+    };
   }
 }

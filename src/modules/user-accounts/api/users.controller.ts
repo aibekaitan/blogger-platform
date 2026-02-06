@@ -1,69 +1,52 @@
 import {
-  Body,
   Controller,
-  Delete,
   Get,
-  HttpCode,
-  HttpStatus,
-  Param,
   Post,
-  Put,
+  Delete,
+  Param,
+  Body,
   Query,
+  HttpCode,
+  NotFoundException,
+  HttpStatus,
 } from '@nestjs/common';
-import { UsersQueryRepository } from '../infrastructure/query/users.query-repository';
-import { UserViewDto } from './view-dto/users.view-dto';
+// import { UsersService } from '../domain/users.service';
+import { CreateUserDto } from '../dto/create-user.dto';
+import type { UsersQueryFieldsType } from '../types/users.queryFields.type';
+import { IPagination } from '../../../common/types/pagination';
+import { IUserView } from '../types/user.view.interface';
+import { Types } from 'mongoose';
 import { UsersService } from '../application/users.service';
-import { CreateUserInputDto } from './input-dto/users.input-dto';
-import { PaginatedViewDto } from '../../../core/dto/base.paginated.view-dto';
-import { ApiParam } from '@nestjs/swagger';
-import { UpdateUserInputDto } from './input-dto/update-user.input-dto';
-import { GetUsersQueryParams } from './input-dto/get-users-query-params.input-dto';
 
-@Controller('users')
+@Controller('users') // путь /users
 export class UsersController {
-  constructor(
-    private usersQueryRepository: UsersQueryRepository,
-    private usersService: UsersService,
-  ) {
-    console.log('UsersController created');
-  }
+  constructor(private readonly usersService: UsersService) {}
 
-  @ApiParam({ name: 'id' }) //для сваггера
-  @Get(':id') //users/232342-sdfssdf-23234323
-  async getById(@Param('id') id: string): Promise<UserViewDto> {
-    // можем и чаще так и делаем возвращать Promise из action. Сам NestJS будет дожидаться, когда
-    // промис зарезолвится и затем NestJS вернёт результат клиенту
-    return this.usersQueryRepository.getByIdOrNotFoundFail(id);
-  }
-
+  /** GET /users */
   @Get()
-  async getAll(
-    @Query() query: GetUsersQueryParams,
-  ): Promise<PaginatedViewDto<UserViewDto[]>> {
-    return this.usersQueryRepository.getAll(query);
+  async getAllUsers(
+    @Query() query: UsersQueryFieldsType,
+  ): Promise<IPagination<IUserView[]>> {
+    return await this.usersService.getAllUsers(query);
   }
 
+  /** POST /users */
   @Post()
-  async createUser(@Body() body: CreateUserInputDto): Promise<UserViewDto> {
-    const userId = await this.usersService.createUser(body);
-
-    return this.usersQueryRepository.getByIdOrNotFoundFail(userId);
+  @HttpCode(HttpStatus.CREATED)
+  async createUser(@Body() dto: CreateUserDto): Promise<IUserView> {
+    return this.usersService.createUser(dto);
   }
 
-  @Put(':id')
-  async updateUser(
-    @Param('id') id: string,
-    @Body() body: UpdateUserInputDto,
-  ): Promise<UserViewDto> {
-    const userId = await this.usersService.updateUser(id, body);
-
-    return this.usersQueryRepository.getByIdOrNotFoundFail(userId);
-  }
-
-  @ApiParam({ name: 'id' }) //для сваггера
+  /** DELETE /users/:id */
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteUser(@Param('id') id: string): Promise<void> {
-    return this.usersService.deleteUser(id);
+    if (!Types.ObjectId.isValid(id)) {
+      throw new NotFoundException('Invalid user id');
+    }
+
+    const user = await this.usersService.deleteUser(id);
+    // usersService.deleteUser уже кидает NotFoundException если не найден
+    return;
   }
 }
