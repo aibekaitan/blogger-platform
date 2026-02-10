@@ -55,6 +55,11 @@ export class BlogsController {
     @Param('id') blogId: string,
     @Query() queryParams: BaseQueryParams,
   ) {
+    const blog = await this.blogsService.findById(blogId);
+
+    if (!blog) {
+      throw new NotFoundException('Blog not found');
+    }
     const result = await this.blogsService.findPostsByBlogId(
       blogId,
       queryParams,

@@ -49,6 +49,9 @@ export class PostController {
     @Param('postId') postId: string,
     @Query() query: CommentsQueryFieldsType,
   ) {
+    const post = await this.postService.getPostById(postId);
+    if (!post)
+      throw new NotFoundException({ message: 'Post not found', field: 'id' });
     return this.postService.getCommentsByPostId(postId, query);
   }
 }
