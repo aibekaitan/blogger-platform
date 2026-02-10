@@ -32,7 +32,7 @@ export class PostController {
 
   @Get(':id')
   async getPostById(@Param('id') id: string): Promise<any> {
-    const post = mapPostToView(await this.postService.getPostById(id));
+    const post = await this.postService.getPostById(id);
     if (!post)
       throw new NotFoundException({ message: 'Post not found', field: 'id' });
     return post;

@@ -45,7 +45,7 @@ export class PostService {
   async getPostById(postId: string, currentUserId?: string) {
     const post = await this.postRepository.findById(postId, currentUserId);
     if (!post) return null;
-    return post;
+    return mapPostToView(post);
   }
 
   async createPost(dto: PostInputModel) {

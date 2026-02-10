@@ -81,7 +81,7 @@ export class BlogsController {
       throw new NotFoundException('Blog not found');
     }
 
-    return blog; // mapToBlogOutput(blog)
+    return mapBlogToView(blog);
   }
 
   @Post()
@@ -98,6 +98,11 @@ export class BlogsController {
     @Param('blogId') blogId: string,
     @Body() createPostDto: PostInputModel,
   ) {
+    const blog = await this.blogsService.findById(blogId);
+
+    if (!blog) {
+      throw new NotFoundException('Blog not found');
+    }
     const newPost = mapPostToView(
       await this.blogsService.createByBlogId(blogId, createPostDto),
     );

@@ -10,8 +10,7 @@ export class BlogsService {
   constructor(private readonly blogsRepository: BlogsRepository) {}
 
   async findById(id: string) {
-    const blog = mapBlogToView(await this.blogsRepository.findById(id));
-    return blog;
+    return await this.blogsRepository.findById(id);
   }
 
   async findAllBlogs(params: {
