@@ -5,12 +5,9 @@ import { Model } from 'mongoose';
 // import { Post, PostDocument } from '../schemas/post.schema';
 // import { Comment, CommentDocument } from '../../comments/schemas/comment.schema';
 // import { Like, LikeDocument, LikeStatus } from '../../likes/schemas/like.schema';
-
-import { PostPaginator } from '../types/paginator';
 // import { PostInputModel } from '../dto/post.input';
 // import { CommentInputModel, CommentDB } from '../../comments/types/comments.dto';
-
-import { UpdateResult, DeleteResult } from 'mongodb';
+import { DeleteResult, UpdateResult } from 'mongodb';
 import { UsersRepository } from '../../user-accounts/infrastructure/users.repository';
 import { Post, PostDocument } from '../domain/post.entity';
 import { Comment, CommentDocument } from '../domain/comment.entity';
@@ -20,6 +17,7 @@ import { PostType } from '../types/post';
 import { PostInputModelType } from '../types/post.input.type';
 import { v4 as uuidv4 } from 'uuid';
 import { mapPostToView } from '../api/middlewares/posts.mapper';
+
 @Injectable()
 export class PostRepository {
   constructor(
@@ -44,6 +42,8 @@ export class PostRepository {
     },
     currentUserId?: string,
   ) {
+    console.log(await this.postModel.countDocuments());
+
     const { pageNumber, pageSize, sortBy, sortDirection } = params;
     const direction = sortDirection === 'asc' ? 1 : -1;
 
@@ -100,6 +100,7 @@ export class PostRepository {
   }
 
   async findById(id: string, currentUserId?: string): Promise<PostType | null> {
+    console.log(await this.postModel.countDocuments());
     const dbPost = await this.postModel.findOne({ id }).lean();
 
     if (!dbPost) return null;
@@ -134,7 +135,7 @@ export class PostRepository {
   async create(dto: PostInputModelType, blogName: string): Promise<PostType> {
     const createdAt = new Date().toISOString();
 
-    const post: PostType = {
+    const postData: PostType = {
       id: uuidv4(),
       title: dto.title,
       shortDescription: dto.shortDescription,
@@ -150,13 +151,21 @@ export class PostRepository {
       },
     };
 
-    await this.postModel.create(post);
+    const createdPost = await this.postModel.create(postData);
 
     return {
-      ...post,
+      id: createdPost.id,
+      title: createdPost.title,
+      shortDescription: createdPost.shortDescription,
+      content: createdPost.content,
+      blogId: createdPost.blogId,
+      blogName: createdPost.blogName,
+      createdAt: createdPost.createdAt,
       extendedLikesInfo: {
-        ...post.extendedLikesInfo,
+        likesCount: createdPost.extendedLikesInfo.likesCount,
+        dislikesCount: createdPost.extendedLikesInfo.dislikesCount,
         myStatus: LikeStatus.None,
+        newestLikes: createdPost.extendedLikesInfo.newestLikes || [],
       },
     };
   }
