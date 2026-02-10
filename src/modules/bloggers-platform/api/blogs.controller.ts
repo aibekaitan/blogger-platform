@@ -20,6 +20,7 @@ import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { BaseQueryParams } from '../../../core/dto/base.query-params.input-dto';
 import { PostInputModel } from '../dto/input-dto/post.input';
 import { mapBlogToView } from './middlewares/blog.mapper';
+import { mapPostToView } from './middlewares/posts.mapper';
 
 @ApiTags('Blogs')
 @Controller('blogs')
@@ -82,8 +83,7 @@ export class BlogsController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create new blog' })
   async createBlog(@Body() createBlogDto: BlogInputModel) {
-    const newBlog = await this.blogsService.create(createBlogDto);
-    return newBlog;
+    return await this.blogsService.create(createBlogDto);
   }
 
   @Post(':blogId/posts')
@@ -93,9 +93,8 @@ export class BlogsController {
     @Param('blogId') blogId: string,
     @Body() createPostDto: PostInputModel,
   ) {
-    const newPost = await this.blogsService.createByBlogId(
-      blogId,
-      createPostDto,
+    const newPost = mapPostToView(
+      await this.blogsService.createByBlogId(blogId, createPostDto),
     );
 
     if (!newPost) {

@@ -18,6 +18,7 @@ import { IPagination } from '../../../common/types/pagination';
 import { PostInputModelType } from '../types/post.input.type';
 import { CommentDB } from '../dto/comments.dto';
 import { PostInputModel } from '../dto/input-dto/post.input';
+import { mapPostToView } from './middlewares/posts.mapper';
 // import { CommentDB } from '../../comments/types/comments.dto';
 
 @Controller('posts')
@@ -30,8 +31,8 @@ export class PostController {
   }
 
   @Get(':id')
-  async getPostById(@Param('id') id: string): Promise<PostType> {
-    const post = await this.postService.getPostById(id);
+  async getPostById(@Param('id') id: string): Promise<any> {
+    const post = mapPostToView(await this.postService.getPostById(id));
     if (!post)
       throw new NotFoundException({ message: 'Post not found', field: 'id' });
     return post;
