@@ -4,6 +4,7 @@ import { BlogInputModel } from '../dto/input-dto/blog.input';
 import { PostInputModel } from '../dto/input-dto/post.input';
 import { BaseQueryParams } from '../../../core/dto/base.query-params.input-dto';
 import { v4 as uuidv4 } from 'uuid';
+import { mapBlogToView } from '../api/middlewares/blog.mapper';
 @Injectable()
 export class BlogsService {
   constructor(private readonly blogsRepository: BlogsRepository) {}
@@ -23,14 +24,17 @@ export class BlogsService {
   }
 
   async create(dto: BlogInputModel) {
-    return this.blogsRepository.create({
-      id: uuidv4(),
-      name: dto.name,
-      description: dto.description,
-      websiteUrl: dto.websiteUrl,
-      createdAt: new Date().toISOString(),
-      isMembership: false,
-    });
+    const blogDocumentPromise = mapBlogToView(
+      await this.blogsRepository.create({
+        id: uuidv4(),
+        name: dto.name,
+        description: dto.description,
+        websiteUrl: dto.websiteUrl,
+        createdAt: new Date().toISOString(),
+        isMembership: false,
+      }),
+    );
+    return blogDocumentPromise;
   }
 
   async update(id: string, dto: BlogInputModel): Promise<boolean> {
@@ -48,7 +52,6 @@ export class BlogsService {
   async delete(id: string) {
     return this.blogsRepository.delete(id);
   }
-
 
   async findPostsByBlogId(blogId: string, query: BaseQueryParams) {
     const result = await this.blogsRepository.findPostsByBlogId(blogId, {

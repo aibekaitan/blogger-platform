@@ -17,6 +17,7 @@ import { CommentRepository } from '../infrastructure/comments.repository';
 import { BlogsRepository } from '../infrastructure/blogs.repository';
 import { SortQueryFieldsType } from '../../../common/types/sortQueryFields.type';
 import { PostInputModel } from '../dto/input-dto/post.input';
+import { mapPostToView } from '../api/middlewares/posts.mapper';
 // import { PostViewModel } from '../types/posts.dto';
 // import { SortQueryFilterType } from '../../common/types/sortQueryFilter.type';
 // import { sortQueryFieldsUtil } from '../../common/utils/sortQueryFields.util';
@@ -53,8 +54,11 @@ export class PostService {
     if (!blog) {
       throw new NotFoundException('Blog not found');
     }
+    const post = mapPostToView(
+      await this.postRepository.create(dto, blog.name),
+    );
 
-    return this.postRepository.create(dto, blog.name);
+    return post;
   }
 
   async getCommentsByPostId(

@@ -7,6 +7,7 @@ import type { PostModelType } from '../domain/post.entity';
 import { PostInputModel } from '../dto/input-dto/post.input';
 import { v4 as uuidv4 } from 'uuid';
 import { mapBlogToView } from '../api/middlewares/blog.mapper';
+import { LikeStatus } from '../domain/like.entity';
 @Injectable()
 export class BlogsRepository {
   constructor(
@@ -118,6 +119,12 @@ export class BlogsRepository {
       blogId: blog.id,
       blogName: blog.name,
       createdAt: new Date().toISOString(),
+      extendedLikesInfo: {
+        likesCount: 0,
+        dislikesCount: 0,
+        myStatus: LikeStatus.None,
+        newestLikes: [],
+      },
     });
 
     return post.save();

@@ -38,7 +38,7 @@ export class PostController {
   }
 
   @Post()
-  async createPost(@Body() dto: PostInputModel): Promise<PostType> {
+  async createPost(@Body() dto: PostInputModel): Promise<any> {
     // const blogName = dto.blogName || 'Unknown Blog';
     return this.postService.createPost(dto);
   }
