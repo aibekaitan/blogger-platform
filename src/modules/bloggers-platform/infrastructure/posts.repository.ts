@@ -132,42 +132,24 @@ export class PostRepository {
     };
   }
 
-  async create(dto: PostInputModelType, blogName: string): Promise<PostType> {
-    const createdAt = new Date().toISOString();
-
-    const postData: PostType = {
+  async create(dto: PostInputModelType, blogName: string): Promise<any> {
+    const newPost = new this.postModel({
       id: uuidv4(),
       title: dto.title,
       shortDescription: dto.shortDescription,
       content: dto.content,
       blogId: dto.blogId,
       blogName,
-      createdAt,
+      createdAt: new Date().toISOString(),
+
       extendedLikesInfo: {
         likesCount: 0,
         dislikesCount: 0,
-        myStatus: LikeStatus.None,
         newestLikes: [],
       },
-    };
+    });
 
-    const createdPost = await this.postModel.create(postData);
-
-    return {
-      id: createdPost.id,
-      title: createdPost.title,
-      shortDescription: createdPost.shortDescription,
-      content: createdPost.content,
-      blogId: createdPost.blogId,
-      blogName: createdPost.blogName,
-      createdAt: createdPost.createdAt,
-      extendedLikesInfo: {
-        likesCount: createdPost.extendedLikesInfo.likesCount,
-        dislikesCount: createdPost.extendedLikesInfo.dislikesCount,
-        myStatus: LikeStatus.None,
-        newestLikes: createdPost.extendedLikesInfo.newestLikes || [],
-      },
-    };
+    return newPost.save();
   }
 
   async createComment(
