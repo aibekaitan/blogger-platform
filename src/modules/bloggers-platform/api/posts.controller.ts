@@ -7,6 +7,9 @@ import {
   Query,
   HttpStatus,
   NotFoundException,
+  Put,
+  HttpCode,
+  Delete,
 } from '@nestjs/common';
 // import { PostService } from '../domain/post.service';
 // import { PostInputModel } from '../dto/post.input';
@@ -53,5 +56,33 @@ export class PostController {
     if (!post)
       throw new NotFoundException({ message: 'Post not found', field: 'id' });
     return this.postService.getCommentsByPostId(postId, query);
+  }
+  @Put(':id')
+  @HttpCode(204)
+  async updatePost(
+    @Param('id') id: string,
+    @Body() updatePostDto: PostInputModel,
+  ): Promise<void> {
+    const isUpdated = await this.postService.updatePost(id, updatePostDto);
+
+    if (!isUpdated) {
+      throw new NotFoundException({
+        message: 'Post not found',
+        field: 'id',
+      });
+    }
+  }
+
+  @Delete(':id')
+  @HttpCode(204)
+  async deletePost(@Param('id') id: string): Promise<void> {
+    const isDeleted = await this.postService.deletePost(id);
+
+    if (!isDeleted) {
+      throw new NotFoundException({
+        message: 'Post not found',
+        field: 'id',
+      });
+    }
   }
 }

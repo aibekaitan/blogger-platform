@@ -6,6 +6,7 @@ import { CreateUserDto, UpdateUserDto } from '../dto/create-user.dto';
 import { IPagination } from '../../../common/types/pagination';
 import { UsersQueryFieldsType } from '../types/users.queryFields.type';
 import { IUserView } from '../types/user.view.interface';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class UsersService {
@@ -32,6 +33,7 @@ export class UsersService {
     const passwordHash = await this.bcryptService.generateHash(dto.password);
 
     const newUser = {
+      id: uuidv4(),
       login: dto.login,
       email: dto.email,
       passwordHash,

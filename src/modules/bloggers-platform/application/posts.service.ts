@@ -98,4 +98,20 @@ export class PostService {
       currentUserId,
     );
   }
+  async updatePost(postId: string, dto: PostInputModel): Promise<boolean> {
+    const blog = await this.blogRepository.findById(dto.blogId);
+
+    if (!blog) {
+      throw new NotFoundException('Blog not found');
+    }
+
+    const updateResult = await this.postRepository.update(postId, dto);
+
+    return updateResult.matchedCount === 1;
+  }
+
+  async deletePost(postId: string): Promise<boolean> {
+    const deleteResult = await this.postRepository.delete(postId);
+    return deleteResult.deletedCount === 1;
+  }
 }
