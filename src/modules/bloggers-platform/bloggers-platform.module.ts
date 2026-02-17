@@ -12,9 +12,9 @@ import { BlogsRepository } from './infrastructure/blogs.repository';
 import { PostQueryRepository } from './infrastructure/query-repo/posts.query.repository';
 import { CommentRepository } from './infrastructure/comments.repository';
 import { CommentService } from './application/comments.service';
-import { UsersController } from '../user-accounts/api/users.controller';
+// import { UsersController } from '../user-accounts/api/users.controller';
 import { BlogsController } from './api/blogs.controller';
-import { CommentsController } from './api/comments.controller';
+// import { CommentsController } from './api/comments.controller';
 import { Post, PostSchema } from './domain/post.entity';
 import { Comment, CommentSchema } from './domain/comment.entity';
 import { Like, LikeSchema } from './domain/like.entity';
@@ -35,7 +35,7 @@ import { PostService } from './application/posts.service';
     UserAccountsModule,
   ],
 
-  controllers: [BlogsController, CommentsController, PostController],
+  controllers: [BlogsController, PostController],
   providers: [
     BlogsService,
     // UsersExternalQueryRepository,

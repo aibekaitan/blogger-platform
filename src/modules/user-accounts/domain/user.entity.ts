@@ -1,5 +1,5 @@
 // src/user-accounts/domain/user.entity.ts
-
+import { randomUUID } from 'crypto';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Model, Types } from 'mongoose';
 
@@ -8,7 +8,7 @@ import { HydratedDocument, Model, Types } from 'mongoose';
   timestamps: { createdAt: true, updatedAt: false }, // createdAt будет Date
 })
 export class User {
-  @Prop({ type: String, required: true, unique: true })
+  @Prop({ type: Types.ObjectId, required: true, unique: true })
   id: string;
 
   @Prop({ type: String, required: true, unique: true, trim: true })
@@ -27,6 +27,30 @@ export class User {
   passwordHash: string;
 
   createdAt: Date;
+
+  @Prop({ default: '' })
+  refreshToken?: string;
+
+  @Prop({ default: () => randomUUID() }) // ← вот здесь randomUUID() для passwordRecoveryCode
+  passwordRecoveryCode: string;
+
+  @Prop({
+    type: {
+      confirmationCode: { type: String, required: true },
+      expirationDate: { type: Date, required: true },
+      isConfirmed: { type: Boolean, default: false },
+    },
+    default: () => ({
+      confirmationCode: randomUUID(),
+      expirationDate: new Date(Date.now() + 60 * 60 * 1000), // 1 час по умолчанию
+      isConfirmed: false,
+    }),
+  })
+  emailConfirmation: {
+    confirmationCode: string;
+    expirationDate: Date;
+    isConfirmed: boolean;
+  };
 
   get idString(): string {
     return this._id?.toString();

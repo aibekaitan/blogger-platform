@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, ObjectId, UpdateResult } from 'mongoose';
+import { Model, ObjectId, Types, UpdateResult } from 'mongoose';
 import { User, UserDocument } from '../domain/user.entity';
 import { CreateUserDto } from '../dto/create-user.dto';
 
@@ -56,7 +56,7 @@ export class UsersRepository {
     );
   }
 
-  async updateConfirmation(_id: ObjectId): Promise<UpdateResult> {
+  async updateConfirmation(_id: Types.ObjectId): Promise<UpdateResult> {
     return this.userModel.updateOne(
       { _id },
       { $set: { 'emailConfirmation.isConfirmed': true } },
@@ -64,7 +64,7 @@ export class UsersRepository {
   }
 
   async updatePassword(
-    _id: ObjectId,
+    _id: Types.ObjectId,
     newPassword: string,
   ): Promise<UpdateResult> {
     return this.userModel.updateOne(
@@ -74,7 +74,7 @@ export class UsersRepository {
   }
 
   async updatePasswordRecoveryCode(
-    _id: ObjectId,
+    _id: Types.ObjectId,
     newCode: string,
   ): Promise<UpdateResult> {
     return this.userModel.updateOne(
@@ -84,7 +84,7 @@ export class UsersRepository {
   }
 
   async updateConfirmationCode(
-    _id: ObjectId,
+    _id: Types.ObjectId,
     newCode: string,
   ): Promise<UpdateResult> {
     return this.userModel.updateOne(
