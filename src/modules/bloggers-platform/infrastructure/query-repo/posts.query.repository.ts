@@ -24,7 +24,7 @@ export class PostQueryRepository {
   async findAllCommentsByPostId(
     postId: string,
     sortQueryDto: SortQueryFilterType,
-    currentUserId?: string,
+    currentUserId?: string | null,
   ): Promise<IPagination<CommentViewModel[]>> {
     const { sortBy, sortDirection, pageSize, pageNumber } = sortQueryDto;
 
@@ -55,7 +55,7 @@ export class PostQueryRepository {
 
   public async _getInViewComment(
     comment: CommentDB,
-    currentUserId?: string,
+    currentUserId?: string | null,
   ): Promise<CommentViewModel> {
     const [likesCount, dislikesCount, myLike] = await Promise.all([
       this.likeModel.countDocuments({

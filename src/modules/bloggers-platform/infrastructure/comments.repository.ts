@@ -10,8 +10,6 @@ import {
 } from '../dto/comments.dto';
 import { Comment, CommentDocument } from '../domain/comment.entity';
 import { Like, LikeDocument, LikeStatus } from '../domain/like.entity';
-// import { Comment, CommentDocument } from '../models/comment.model';
-// import { Like, LikeDocument, LikeStatus } from '../models/like.model';
 
 @Injectable()
 export class CommentRepository {
@@ -22,6 +20,35 @@ export class CommentRepository {
     @InjectModel(Like.name)
     private readonly likeModel: Model<LikeDocument>,
   ) {}
+
+  // Новый метод: создание комментария
+  async create(
+    dto: CommentInputModel,
+    postId: string,
+    userId: string,
+    userLogin: string, // нужно передать login пользователя
+  ): Promise<CommentDB> {
+    const newComment = new this.commentModel({
+      id: crypto.randomUUID(), // или используй uuid.v4() если импортируешь
+      postId,
+      content: dto.content.trim(),
+      commentatorInfo: {
+        userId,
+        userLogin,
+      },
+      createdAt: new Date().toISOString(),
+    });
+
+    await newComment.save();
+
+    // Возвращаем lean-версию без лишних полей Mongoose
+    return newComment.toObject({
+      versionKey: false,
+      transform: (doc, ret) => {
+        return ret;
+      },
+    }) as CommentDB;
+  }
 
   async delete(id: string): Promise<boolean> {
     const result = await this.commentModel.deleteOne({ id }).exec();
@@ -75,12 +102,12 @@ export class CommentRepository {
     return {
       ...comment,
       likesInfo,
-    };
+    } as CommentViewModel;
   }
 
   async update(id: string, dto: CommentInputModel): Promise<void> {
     await this.commentModel
-      .updateOne({ id }, { $set: { content: dto.content } })
+      .updateOne({ id }, { $set: { content: dto.content.trim() } })
       .exec();
   }
 

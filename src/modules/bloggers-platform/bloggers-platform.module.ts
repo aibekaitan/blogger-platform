@@ -21,6 +21,12 @@ import { Like, LikeSchema } from './domain/like.entity';
 import { PostController } from './api/posts.controller';
 import { PostRepository } from './infrastructure/posts.repository';
 import { PostService } from './application/posts.service';
+import { OptionalJwtStrategy } from '../user-accounts/strategies/optional-jwt.strategy';
+import { JwtStrategy } from '../user-accounts/strategies/jwt.service';
+import { PassportModule } from '@nestjs/passport';
+import { JwtModule } from '@nestjs/jwt';
+import { appConfig } from '../../common/config/config';
+import { CommentsController } from './api/comments.controller';
 
 //тут регистрируем провайдеры всех сущностей блоггерской платформы (blogs, posts, comments, etc...)
 @Module({
@@ -33,9 +39,14 @@ import { PostService } from './application/posts.service';
       { name: Like.name, schema: LikeSchema },
     ]),
     UserAccountsModule,
+    PassportModule.register({ defaultStrategy: 'jwt' }),
+    JwtModule.register({
+      secret: appConfig.AC_SECRET,
+      signOptions: { expiresIn: '5m' }, // как в задании — минимум 5 минут
+    }),
   ],
 
-  controllers: [BlogsController, PostController],
+  controllers: [BlogsController, PostController, CommentsController],
   providers: [
     BlogsService,
     // UsersExternalQueryRepository,
@@ -48,6 +59,8 @@ import { PostService } from './application/posts.service';
     CommentService,
     PostRepository,
     PostService,
+    OptionalJwtStrategy,
+    JwtStrategy,
   ],
 })
 export class BloggersPlatformModule {}

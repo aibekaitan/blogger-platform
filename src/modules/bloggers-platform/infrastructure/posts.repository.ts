@@ -40,7 +40,7 @@ export class PostRepository {
       sortBy: string;
       sortDirection: string;
     },
-    currentUserId?: string,
+    currentUserId?: string | null,
   ) {
     console.log(await this.postModel.countDocuments());
 
@@ -99,7 +99,10 @@ export class PostRepository {
     };
   }
 
-  async findById(id: string, currentUserId?: string): Promise<PostType | null> {
+  async findById(
+    id: string,
+    currentUserId?: string | null,
+  ): Promise<PostType | null> {
     console.log(await this.postModel.countDocuments());
     const dbPost = await this.postModel.findOne({ id }).lean();
 

@@ -23,8 +23,9 @@ import { PostInputModel } from '../dto/input-dto/post.input';
 import { mapBlogToView } from './middlewares/blog.mapper';
 import { mapPostToView } from './middlewares/posts.mapper';
 import { NoRateLimit } from '../../../common/decorators/no-rate-limit.decorator';
-import { JwtAuthGuard } from '../../user-accounts/api/guards/jwt-auth.guard';
+// import { JwtAuthGuard } from '../../user-accounts/api/guards/jwt-auth.guard';
 import { BasicAuthGuard } from '../../user-accounts/adapters/basic-auth.guard';
+import { OptionalJwtAuthGuard } from '../../user-accounts/adapters/optional-jwt-auth.guard';
 @NoRateLimit()
 @ApiTags('Blogs')
 @Controller('blogs')
@@ -52,7 +53,7 @@ export class BlogsController {
 
     return result; // { pagesCount, page, pageSize, totalCount, items }
   }
-
+  @UseGuards(OptionalJwtAuthGuard)
   @Get(':id/posts')
   @ApiOperation({ summary: 'Get posts for specific blog' })
   async getPostsByBlogId(
