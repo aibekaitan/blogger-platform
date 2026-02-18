@@ -11,12 +11,13 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 // import { UsersService } from '../domain/users.service';
-import { CreateUserDto } from '../dto/create-user.dto';
+// import { CreateUserDto } from '../dto/create-user.dto';
 import type { UsersQueryFieldsType } from '../types/users.queryFields.type';
 import { IPagination } from '../../../common/types/pagination';
 import { IUserView } from '../types/user.view.interface';
 import { Types } from 'mongoose';
 import { UsersService } from '../application/users.service';
+import { UserInputDto } from './input-dto/users.input.dto';
 
 @Controller('users') // путь /users
 export class UsersController {
@@ -31,7 +32,7 @@ export class UsersController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async createUser(@Body() dto: CreateUserDto): Promise<IUserView> {
+  async createUser(@Body() dto: UserInputDto): Promise<IUserView> {
     return this.usersService.createUser(dto);
   }
 
