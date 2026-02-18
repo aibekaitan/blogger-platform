@@ -130,17 +130,41 @@ export class AuthService {
     password: string,
     email: string,
   ): Promise<void> {
-    const exists = await this.usersRepository.doesExistByLoginOrEmail(
-      login,
-      email,
-    );
-    if (exists) {
+    // const exists = await this.usersRepository.doesExistByLoginOrEmail(
+    //   login,
+    //   email,
+    // );
+    // if (exists) {
+    //   throw new BadRequestException({
+    //     errorsMessages: [
+    //       { message: 'Login or email already exists', field: 'loginOrEmail' },
+    //     ],
+    //   });
+    // }
+    const existingLogin = await this.usersRepository.findByLogin(login);
+    if (existingLogin) {
       throw new BadRequestException({
         errorsMessages: [
-          { message: 'Login or email already exists', field: 'loginOrEmail' },
+          {
+            message: 'Login already exists',
+            field: 'login',
+          },
         ],
       });
     }
+
+    const existingEmail = await this.usersRepository.findByEmail(email);
+    if (existingEmail) {
+      throw new BadRequestException({
+        errorsMessages: [
+          {
+            message: 'Email already exists',
+            field: 'email',
+          },
+        ],
+      });
+    }
+
     const confirmationCode = randomUUID();
     const expirationDate = new Date(Date.now() + 60 * 60 * 1000); // 1 час
 

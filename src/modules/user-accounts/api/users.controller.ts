@@ -9,6 +9,7 @@ import {
   HttpCode,
   NotFoundException,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 // import { UsersService } from '../domain/users.service';
 // import { CreateUserDto } from '../dto/create-user.dto';
@@ -19,9 +20,12 @@ import { Types } from 'mongoose';
 import { UsersService } from '../application/users.service';
 import { UserInputDto } from './input-dto/users.input.dto';
 import { NoRateLimit } from '../../../common/decorators/no-rate-limit.decorator';
+// import { AuthGuard } from '@nestjs/passport';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @NoRateLimit()
 @Controller('users')
+@UseGuards(JwtAuthGuard)
 // путь /users
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}

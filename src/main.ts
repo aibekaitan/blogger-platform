@@ -1,8 +1,14 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { appSetup } from './setup/app.setup';
-import { BadRequestException, ValidationPipe } from '@nestjs/common';
+import {
+  BadRequestException,
+  ValidationError,
+  ValidationPipe,
+} from '@nestjs/common';
 import * as dotenv from 'dotenv';
+import { Error } from 'mongoose';
+
 // import { RequestLoggerAndLimiterMiddleware } from './modules/user-accounts/adapters/request-logger-limiter.middleware';
 
 dotenv.config();
@@ -16,12 +22,17 @@ async function bootstrap() {
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
-      exceptionFactory: (errors) => {
-        const messages = errors.map((e) => ({
-          message: Object.values(e.constraints || {})[0],
-          field: e.property,
+      stopAtFirstError: false,
+      exceptionFactory: (validationErrors: ValidationError[] = []) => {
+        const errors = validationErrors.map((error) => ({
+          message:
+            Object.values(error.constraints || {})[0] || 'Validation failed',
+          field: error.property,
         }));
-        return new BadRequestException({ errorsMessages: messages });
+
+        return new BadRequestException({
+          errorsMessages: errors,
+        });
       },
     }),
   );

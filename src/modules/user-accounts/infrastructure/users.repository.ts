@@ -10,7 +10,13 @@ export class UsersRepository {
     @InjectModel(User.name)
     private readonly userModel: Model<UserDocument>,
   ) {}
+  async findByLogin(login: string): Promise<UserDocument | null> {
+    return this.userModel.findOne({ login }).lean().exec();
+  }
 
+  async findByEmail(email: string): Promise<UserDocument | null> {
+    return this.userModel.findOne({ email }).lean().exec();
+  }
   async create(user: Partial<User>): Promise<string> {
     const newUser = new this.userModel(user);
     const savedUser = await newUser.save();
