@@ -17,6 +17,7 @@ import { NodemailerService } from './adapters/nodemailer.service';
 import { RequestLog, RequestLogSchema } from './domain/request-log.schema';
 import { RateLimiterInterceptor } from './adapters/request-logger-limiter.middleware';
 import { APP_INTERCEPTOR } from '@nestjs/core';
+import { BasicAuthGuard } from './adapters/basic-auth.guard';
 // import { RequestLoggerAndLimiterMiddleware } from './adapters/request-logger-limiter.middleware';
 
 @Module({
@@ -42,6 +43,7 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
     // AuthQueryRepository,
     BcryptService,
     NodemailerService,
+    BasicAuthGuard,
     {
       provide: APP_INTERCEPTOR,
       useClass: RateLimiterInterceptor,

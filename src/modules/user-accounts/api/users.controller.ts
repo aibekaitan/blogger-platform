@@ -20,12 +20,13 @@ import { Types } from 'mongoose';
 import { UsersService } from '../application/users.service';
 import { UserInputDto } from './input-dto/users.input.dto';
 import { NoRateLimit } from '../../../common/decorators/no-rate-limit.decorator';
+import { BasicAuthGuard } from '../adapters/basic-auth.guard';
 // import { AuthGuard } from '@nestjs/passport';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
+// import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @NoRateLimit()
 @Controller('users')
-@UseGuards(JwtAuthGuard)
+@UseGuards(BasicAuthGuard)
 // путь /users
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
