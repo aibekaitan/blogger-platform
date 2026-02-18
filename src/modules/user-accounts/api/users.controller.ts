@@ -18,8 +18,11 @@ import { IUserView } from '../types/user.view.interface';
 import { Types } from 'mongoose';
 import { UsersService } from '../application/users.service';
 import { UserInputDto } from './input-dto/users.input.dto';
+import { NoRateLimit } from '../../../common/decorators/no-rate-limit.decorator';
 
-@Controller('users') // путь /users
+@NoRateLimit()
+@Controller('users')
+// путь /users
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 

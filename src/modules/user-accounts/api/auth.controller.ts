@@ -31,11 +31,12 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 // import { ResultStatus } from '../../../common/result/resultCode';
 // import { resultCodeToHttpException } from '../../../common/result/resultCodeToHttpException';
 import { AuthService } from '../application/auth.service';
+import { NoRateLimit } from '../../../common/decorators/no-rate-limit.decorator';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
-
+  @NoRateLimit()
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(
@@ -188,6 +189,7 @@ export class AuthController {
 
     // 204
   }
+  @NoRateLimit()
   @UseGuards(JwtAuthGuard)
   @Get('me')
   @HttpCode(HttpStatus.OK)
