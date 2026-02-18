@@ -10,6 +10,7 @@ import {
   Put,
   HttpCode,
   Delete,
+  UseGuards,
 } from '@nestjs/common';
 // import { PostService } from '../domain/post.service';
 // import { PostInputModel } from '../dto/post.input';
@@ -23,6 +24,8 @@ import { CommentDB } from '../dto/comments.dto';
 import { PostInputModel } from '../dto/input-dto/post.input';
 import { mapPostToView } from './middlewares/posts.mapper';
 import { NoRateLimit } from '../../../common/decorators/no-rate-limit.decorator';
+import { JwtAuthGuard } from '../../user-accounts/api/guards/jwt-auth.guard';
+import { BasicAuthGuard } from '../../user-accounts/adapters/basic-auth.guard';
 // import { CommentDB } from '../../comments/types/comments.dto';
 @NoRateLimit()
 @Controller('posts')
@@ -41,7 +44,7 @@ export class PostController {
       throw new NotFoundException({ message: 'Post not found', field: 'id' });
     return post;
   }
-
+  @UseGuards(BasicAuthGuard)
   @Post()
   async createPost(@Body() dto: PostInputModel): Promise<any> {
     // const blogName = dto.blogName || 'Unknown Blog';
@@ -58,6 +61,7 @@ export class PostController {
       throw new NotFoundException({ message: 'Post not found', field: 'id' });
     return this.postService.getCommentsByPostId(postId, query);
   }
+  @UseGuards(BasicAuthGuard)
   @Put(':id')
   @HttpCode(204)
   async updatePost(
@@ -73,7 +77,7 @@ export class PostController {
       });
     }
   }
-
+  @UseGuards(BasicAuthGuard)
   @Delete(':id')
   @HttpCode(204)
   async deletePost(@Param('id') id: string): Promise<void> {
