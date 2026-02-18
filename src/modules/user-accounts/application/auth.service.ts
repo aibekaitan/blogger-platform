@@ -1,24 +1,24 @@
-// src/auth/auth.service.ts
 import {
-  Injectable,
-  UnauthorizedException,
   BadRequestException,
+  Injectable,
   NotFoundException,
+  UnauthorizedException,
+  // BadRequestException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { randomUUID } from 'crypto';
-
-// import { DevicesRepository } from '../security-devices/infrastructure/security-devices.repository';
+// import { randomUUID } from 'crypto';
 
 import { UsersRepository } from '../infrastructure/users.repository';
 import { NodemailerService } from '../adapters/nodemailer.service';
-import { emailExamples } from '../adapters/emailExamples';
+// import { emailExamples } from '../adapters/emailExamples';
 import { BcryptService } from '../adapters/bcrypt.service';
 import { IUserDB } from '../types/user.db.interface';
-import { User } from '../domain/user.entity';
+// import { User } from '../domain/user.entity';
 import { UsersQueryRepository } from '../infrastructure/query/users.query-repository';
-import { Types } from 'mongoose';
+import { randomUUID } from 'crypto';
+import { emailExamples } from '../adapters/emailExamples';
+import { User } from '../domain/user.entity';
 import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
@@ -30,7 +30,6 @@ export class AuthService {
     private readonly usersQueryRepo: UsersQueryRepository,
     private readonly bcryptService: BcryptService,
     private readonly nodemailerService: NodemailerService,
-    // private readonly devicesRepository: DevicesRepository,
   ) {}
 
   async loginUser(
@@ -42,27 +41,14 @@ export class AuthService {
     const user = await this.validateUserCredentials(loginOrEmail, password);
 
     const userId = user._id.toString();
-    const deviceId = randomUUID();
+    const login = user.login; // ← берём login из пользователя
 
-    const accessToken = await this.generateAccessToken(
-      userId,
-      // , deviceId
-    );
-    const refreshToken = await this.generateRefreshToken(
-      userId,
-      // , deviceId
-    );
+    const accessToken = await this.generateAccessToken(userId, login);
+    const refreshToken = await this.generateRefreshToken(userId, login);
 
-    // Сохраняем/обновляем устройство
-    // await this.devicesRepository.upsertDevice({
-    //   userId,
-    //   deviceId,
-    //   ip,
-    //   title,
-    //   lastActiveDate: new Date(),
-    //   expirationDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 дней
-    //   refreshToken,
-    // });
+    // Если потом добавишь devices — раскомментируй
+    // const deviceId = randomUUID();
+    // await this.devicesRepository.upsertDevice({ ... });
 
     return { accessToken, refreshToken };
   }
@@ -89,42 +75,22 @@ export class AuthService {
 
   private async generateAccessToken(
     userId: string,
-    // deviceId: string,
+    login: string,
   ): Promise<string> {
-    const payload = {
-      userId,
-      // , deviceId
-    };
-    return this.jwtService.signAsync(payload);
+    const payload = { userId, login };
+    return this.jwtService.signAsync(payload, { expiresIn: '300s' }); // 5 минут
   }
 
   private async generateRefreshToken(
     userId: string,
-    // deviceId: string,
+    login: string,
   ): Promise<string> {
-    const payload = {
-      userId,
-      // , deviceId
-    };
-    return this.jwtService.signAsync(payload);
+    const payload = { userId, login };
+    return this.jwtService.signAsync(payload); // без expiresIn — вечный или долгий
   }
 
-  // async logout(refreshToken: string): Promise<void> {
-  //   if (!refreshToken) {
-  //     throw new UnauthorizedException('No refresh token');
-  //   }
-  //
-  //   const payload = await this.jwtService.verifyAsync(refreshToken, {
-  //     secret: this.configService.get<string>('RT_SECRET'),
-  //   });
-  //
-  //   if (!payload?.deviceId) {
-  //     throw new UnauthorizedException('Invalid refresh token');
-  //   }
-  //
-  //   await this.devicesRepository.deleteByDeviceId(payload.deviceId);
-  // }
-
+  // Остальные методы (register, confirm, recovery и т.д.) остаются без изменений
+  // ...
   async registerUser(
     login: string,
     password: string,
@@ -152,7 +118,6 @@ export class AuthService {
         ],
       });
     }
-
     const existingEmail = await this.usersRepository.findByEmail(email);
     if (existingEmail) {
       throw new BadRequestException({
@@ -164,10 +129,8 @@ export class AuthService {
         ],
       });
     }
-
     const confirmationCode = randomUUID();
     const expirationDate = new Date(Date.now() + 60 * 60 * 1000); // 1 час
-
     const passwordHash = await this.bcryptService.generateHash(password);
     const dto = {
       id: uuidv4(),
@@ -182,7 +145,6 @@ export class AuthService {
       isConfirmed: false,
     };
     await this.usersRepository.create(newUser);
-
     // Отправка email подтверждения
     await this.nodemailerService
       .sendEmail(
@@ -192,7 +154,6 @@ export class AuthService {
       )
       .catch((err) => console.error('Email send error:', err));
   }
-
   async confirmEmail(code: string): Promise<void> {
     const user = await this.usersRepository.findUserByConfirmationCode(code);
     if (!user) {
@@ -202,16 +163,13 @@ export class AuthService {
         ],
       });
     }
-
     if (user.emailConfirmation.isConfirmed) {
       throw new BadRequestException({
         errorsMessages: [{ message: 'Code already confirmed', field: 'code' }],
       });
     }
-
     await this.usersRepository.updateConfirmation(user._id);
   }
-
   async resendRegistrationEmail(email: string): Promise<void> {
     const user = await this.usersRepository.findByLoginOrEmail(email);
     if (!user) {
@@ -219,7 +177,6 @@ export class AuthService {
         errorsMessages: [{ message: 'User not found', field: 'email' }],
       });
     }
-
     if (user.emailConfirmation.isConfirmed) {
       throw new BadRequestException({
         errorsMessages: [
@@ -227,13 +184,11 @@ export class AuthService {
         ],
       });
     }
-
     user.emailConfirmation.confirmationCode = randomUUID();
     await this.usersRepository.updateConfirmationCode(
       user._id,
       user.emailConfirmation.confirmationCode,
     );
-
     await this.nodemailerService
       .sendEmail(
         user.email,
@@ -242,20 +197,17 @@ export class AuthService {
       )
       .catch((err) => console.error('Resend email error:', err));
   }
-
   async passwordRecovery(email: string): Promise<void> {
     const user = await this.usersRepository.findByLoginOrEmail(email);
     if (!user) {
       // По заданию — всегда 204, даже если email не существует
       return;
     }
-
     user.passwordRecoveryCode = randomUUID();
     await this.usersRepository.updatePasswordRecoveryCode(
       user._id,
       user.passwordRecoveryCode,
     );
-
     await this.nodemailerService
       .sendEmail(
         user.email,
@@ -264,7 +216,6 @@ export class AuthService {
       )
       .catch((err) => console.error('Recovery email error:', err));
   }
-
   async changePassword(
     recoveryCode: string,
     newPassword: string,
@@ -281,11 +232,9 @@ export class AuthService {
         ],
       });
     }
-
     const passwordHash = await this.bcryptService.generateHash(newPassword);
     await this.usersRepository.updatePassword(user._id, passwordHash);
   }
-
   async refreshTokens(
     refreshToken: string,
   ): Promise<{ accessToken: string; refreshToken: string }> {
@@ -297,27 +246,23 @@ export class AuthService {
     } catch {
       throw new UnauthorizedException('Invalid refresh token');
     }
-
-    if (!payload?.deviceId || !payload?.userId) {
+    if (!payload?.login || !payload?.userId) {
       throw new UnauthorizedException('Invalid refresh token payload');
     }
-
     // const device = await this.devicesRepository.findByDeviceId(
     //   payload.deviceId,
     // );
     // if (!device || device.userId !== payload.userId) {
     //   throw new UnauthorizedException('Session not found');
     // }
-
     const newAccessToken = await this.generateAccessToken(
       payload.userId,
-      // payload.deviceId,
+      payload.login,
     );
     const newRefreshToken = await this.generateRefreshToken(
       payload.userId,
-      // payload.deviceId,
+      payload.login,
     );
-
     // await this.devicesRepository.upsertDevice({
     //   userId: payload.userId,
     //   deviceId: payload.deviceId,
@@ -327,10 +272,8 @@ export class AuthService {
     //   expirationDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
     //   refreshToken: newRefreshToken,
     // });
-
     return { accessToken: newAccessToken, refreshToken: newRefreshToken };
   }
-
   async getMe(userId: string) {
     if (!userId) {
       throw new UnauthorizedException();

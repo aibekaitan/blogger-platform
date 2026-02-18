@@ -3,4 +3,5 @@ export interface JwtPayload {
   deviceId: string;
   iat?: number;
   exp?: number;
+  login: string;
 }
