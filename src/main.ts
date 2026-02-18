@@ -16,7 +16,7 @@ dotenv.config();
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  appSetup(app); //глобальные настройки приложения
+  // appSetup(app); //глобальные настройки приложения
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -24,6 +24,7 @@ async function bootstrap() {
       transform: true,
       stopAtFirstError: false,
       exceptionFactory: (validationErrors: ValidationError[] = []) => {
+        console.log('ValidationPipe triggered! Errors:', validationErrors);
         const errors = validationErrors.map((error) => ({
           message:
             Object.values(error.constraints || {})[0] || 'Validation failed',
