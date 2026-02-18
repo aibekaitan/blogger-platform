@@ -17,7 +17,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   // Этот метод вызывается автоматически после верификации токена
   // payload — это уже распарсенный и проверенный токен
   async validate(payload: JwtPayload) {
-    if (!payload.userId) {
+    if (!payload.userId || !payload.deviceId) {
       throw new UnauthorizedException('Invalid token payload');
     }
 
@@ -28,6 +28,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     // Возвращаем то, что попадёт в req.user
     return {
       userId: payload.userId,
+      deviceId: payload.deviceId,
       // можно добавить другие поля: email, login и т.д., если они есть в токене
     };
   }
