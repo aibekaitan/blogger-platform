@@ -13,10 +13,11 @@ import {
 import type { Request } from 'express';
 import { CommentViewModel } from '../dto/comments.dto';
 import { CommentService } from '../application/comments.service';
+import { NoRateLimit } from '../../../common/decorators/no-rate-limit.decorator';
 // import { UpdateCommentDto } from '../api/input-dto/update-comment.dto';
 // import { LikeStatusDto } from '../api/input-dto/like-status.dto';
 // import { CommentViewDto } from '../api/view-dto/comment.view-dto';
-
+// @NoRateLimit()
 // @Controller('comments')
 // export class CommentsController {
 //   constructor(private readonly commentService: CommentService) {}

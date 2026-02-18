@@ -22,8 +22,9 @@ import { PostInputModelType } from '../types/post.input.type';
 import { CommentDB } from '../dto/comments.dto';
 import { PostInputModel } from '../dto/input-dto/post.input';
 import { mapPostToView } from './middlewares/posts.mapper';
+import { NoRateLimit } from '../../../common/decorators/no-rate-limit.decorator';
 // import { CommentDB } from '../../comments/types/comments.dto';
-
+@NoRateLimit()
 @Controller('posts')
 export class PostController {
   constructor(private readonly postService: PostService) {}

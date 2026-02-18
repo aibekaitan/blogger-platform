@@ -16,7 +16,7 @@ dotenv.config();
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // appSetup(app); //глобальные настройки приложения
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -37,6 +37,7 @@ async function bootstrap() {
       },
     }),
   );
+  appSetup(app); //глобальные настройки приложения
   // const loggerMiddleware = app.get(RequestLoggerAndLimiterMiddleware);
   //
   // // Подключаем как функцию

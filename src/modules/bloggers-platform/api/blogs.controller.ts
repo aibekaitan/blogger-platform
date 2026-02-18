@@ -21,7 +21,8 @@ import { BaseQueryParams } from '../../../core/dto/base.query-params.input-dto';
 import { PostInputModel } from '../dto/input-dto/post.input';
 import { mapBlogToView } from './middlewares/blog.mapper';
 import { mapPostToView } from './middlewares/posts.mapper';
-
+import { NoRateLimit } from '../../../common/decorators/no-rate-limit.decorator';
+@NoRateLimit()
 @ApiTags('Blogs')
 @Controller('blogs')
 export class BlogsController {
