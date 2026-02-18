@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import * as dotenv from 'dotenv';
 import { Error } from 'mongoose';
+import cookieParser from 'cookie-parser';
 
 // import { RequestLoggerAndLimiterMiddleware } from './modules/user-accounts/adapters/request-logger-limiter.middleware';
 
@@ -49,6 +50,7 @@ async function bootstrap() {
   //
   // // Подключаем как функцию
   // app.use(loggerMiddleware.use.bind(loggerMiddleware));
+  app.use(cookieParser());
   const PORT = process.env.PORT || 5005; //TODO: move to configService. will be in the following lessons
 
   await app.listen(PORT, () => {

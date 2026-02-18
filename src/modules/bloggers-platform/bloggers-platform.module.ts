@@ -21,7 +21,6 @@ import { Like, LikeSchema } from './domain/like.entity';
 import { PostController } from './api/posts.controller';
 import { PostRepository } from './infrastructure/posts.repository';
 import { PostService } from './application/posts.service';
-import { OptionalJwtStrategy } from '../user-accounts/strategies/optional-jwt.strategy';
 import { JwtStrategy } from '../user-accounts/strategies/jwt.service';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
@@ -59,7 +58,6 @@ import { CommentsController } from './api/comments.controller';
     CommentService,
     PostRepository,
     PostService,
-    OptionalJwtStrategy,
     JwtStrategy,
   ],
 })

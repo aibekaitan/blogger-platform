@@ -1,9 +1,12 @@
 // src/bloggers-platform/dto/post.input.ts
 import { ApiProperty } from '@nestjs/swagger';
 import { IsMongoId, IsNotEmpty, IsString, Length } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class PostInputModel {
+
   @ApiProperty({ example: 'New Post Title', minLength: 3, maxLength: 30 })
+  @Transform(({ value }) => (value ?? '').trim())
   @IsString()
   @IsNotEmpty()
   @Length(3, 30)
@@ -14,6 +17,7 @@ export class PostInputModel {
     minLength: 3,
     maxLength: 100,
   })
+  @Transform(({ value }) => (value ?? '').trim())
   @IsString()
   @IsNotEmpty()
   @Length(3, 100)
@@ -24,6 +28,7 @@ export class PostInputModel {
     minLength: 3,
     maxLength: 1000,
   })
+  @Transform(({ value }) => (value ?? '').trim())
   @IsString()
   @IsNotEmpty()
   @Length(3, 1000)

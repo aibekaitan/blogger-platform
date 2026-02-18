@@ -5,6 +5,7 @@ import { PostInputModel } from '../dto/input-dto/post.input';
 import { BaseQueryParams } from '../../../core/dto/base.query-params.input-dto';
 import { v4 as uuidv4 } from 'uuid';
 import { mapBlogToView } from '../api/middlewares/blog.mapper';
+import { CreatePostForBlogInputModel } from '../dto/input-dto/create-post-for-blog.input';
 @Injectable()
 export class BlogsService {
   constructor(private readonly blogsRepository: BlogsRepository) {}
@@ -70,7 +71,7 @@ export class BlogsService {
     return result;
   }
 
-  async createByBlogId(blogId: string, dto: PostInputModel) {
+  async createByBlogId(blogId: string, dto: CreatePostForBlogInputModel) {
     const blog = await this.blogsRepository.findById(blogId);
     if (!blog) return null;
 

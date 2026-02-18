@@ -9,6 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { mapBlogToView } from '../api/middlewares/blog.mapper';
 import { LikeStatus } from '../domain/like.entity';
 import { mapPostToView } from '../api/middlewares/posts.mapper';
+import { CreatePostForBlogInputModel } from '../dto/input-dto/create-post-for-blog.input';
 @Injectable()
 export class BlogsRepository {
   constructor(
@@ -111,7 +112,7 @@ export class BlogsRepository {
 
   async createPostByBlogId(
     blog: BlogDocument,
-    dto: PostInputModel,
+    dto: CreatePostForBlogInputModel,
   ): Promise<PostDocument> {
     const post = new this.PostModel({
       id: uuidv4(),

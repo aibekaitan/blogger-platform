@@ -26,6 +26,7 @@ import { NoRateLimit } from '../../../common/decorators/no-rate-limit.decorator'
 // import { JwtAuthGuard } from '../../user-accounts/api/guards/jwt-auth.guard';
 import { BasicAuthGuard } from '../../user-accounts/api/guards/basic-auth.guard';
 import { OptionalJwtAuthGuard } from '../../user-accounts/api/guards/optional-jwt-auth.guard';
+import { CreatePostForBlogInputModel } from '../dto/input-dto/create-post-for-blog.input';
 @NoRateLimit()
 @ApiTags('Blogs')
 @Controller('blogs')
@@ -103,7 +104,7 @@ export class BlogsController {
   @ApiOperation({ summary: 'Create post for specific blog' })
   async createPostByBlogId(
     @Param('blogId') blogId: string,
-    @Body() createPostDto: PostInputModel,
+    @Body() createPostDto: CreatePostForBlogInputModel,
   ) {
     const blog = await this.blogsService.findById(blogId);
 
