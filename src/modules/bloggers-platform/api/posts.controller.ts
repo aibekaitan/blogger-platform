@@ -18,9 +18,9 @@ import { LikeStatusInputModel } from '../dto/input-dto/like-status.input';
 // import { CommentInputModel } from '../dto/input-dto/comment.input'; // создай этот DTO ниже
 import { mapPostToView } from './middlewares/posts.mapper';
 import { NoRateLimit } from '../../../common/decorators/no-rate-limit.decorator';
-import { BasicAuthGuard } from '../../user-accounts/adapters/basic-auth.guard';
+import { BasicAuthGuard } from '../../user-accounts/api/guards/basic-auth.guard';
 import { JwtAuthGuard } from '../../user-accounts/api/guards/jwt-auth.guard';
-import { OptionalJwtAuthGuard } from '../../user-accounts/adapters/optional-jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../../user-accounts/api/guards/optional-jwt-auth.guard';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import type { CommentsQueryFieldsType } from '../types/comments.queryFields.type';
 import { IPagination } from '../../../common/types/pagination';
