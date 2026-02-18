@@ -16,20 +16,27 @@ dotenv.config();
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
-      forbidNonWhitelisted: true,
+      forbidNonWhitelisted: false,
       transform: true,
       stopAtFirstError: false,
       exceptionFactory: (validationErrors: ValidationError[] = []) => {
-        console.log('ValidationPipe triggered! Errors:', validationErrors);
-        const errors = validationErrors.map((error) => ({
-          message:
-            Object.values(error.constraints || {})[0] || 'Validation failed',
-          field: error.property,
-        }));
+        console.log(
+          'ValidationPipe triggered! Raw errors:',
+          JSON.stringify(validationErrors, null, 2),
+        );
+
+        const errors = validationErrors.map((error) => {
+          const firstConstraint = Object.values(error.constraints || {})[0];
+          return {
+            message: firstConstraint || 'Validation failed',
+            field: error.property,
+          };
+        });
+
+        console.log('Formatted errors:', errors);
 
         return new BadRequestException({
           errorsMessages: errors,

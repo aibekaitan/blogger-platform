@@ -12,6 +12,7 @@ import {
   Post,
   Put,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { BlogsService } from '../application/blogs.service'; // подправь путь
 import { BlogInputModel } from '../dto/input-dto/blog.input';
@@ -22,6 +23,8 @@ import { PostInputModel } from '../dto/input-dto/post.input';
 import { mapBlogToView } from './middlewares/blog.mapper';
 import { mapPostToView } from './middlewares/posts.mapper';
 import { NoRateLimit } from '../../../common/decorators/no-rate-limit.decorator';
+import { JwtAuthGuard } from '../../user-accounts/api/guards/jwt-auth.guard';
+import { BasicAuthGuard } from '../../user-accounts/adapters/basic-auth.guard';
 @NoRateLimit()
 @ApiTags('Blogs')
 @Controller('blogs')
@@ -85,6 +88,7 @@ export class BlogsController {
     return mapBlogToView(blog);
   }
 
+  @UseGuards(BasicAuthGuard)
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create new blog' })
@@ -92,6 +96,7 @@ export class BlogsController {
     return await this.blogsService.create(createBlogDto);
   }
 
+  @UseGuards(BasicAuthGuard)
   @Post(':blogId/posts')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create post for specific blog' })
@@ -115,6 +120,7 @@ export class BlogsController {
     return newPost;
   }
 
+  @UseGuards(BasicAuthGuard)
   @Put(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Update blog by id' })
@@ -131,6 +137,7 @@ export class BlogsController {
     return; // 204 No Content
   }
 
+  @UseGuards(BasicAuthGuard)
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete blog by id' })
