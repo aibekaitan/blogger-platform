@@ -42,6 +42,7 @@ export class PostService {
 
   // POST /posts — создание поста
   async createPost(dto: PostInputModel) {
+    console.log(dto);
     const blog = await this.blogRepository.findById(dto.blogId);
 
     if (!blog) {

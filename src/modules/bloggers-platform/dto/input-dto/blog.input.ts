@@ -1,9 +1,11 @@
 // src/bloggers-platform/dto/blog.input.ts
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsString, IsUrl, Length, Matches } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class BlogInputModel {
   @ApiProperty({ example: 'My Blog', minLength: 3, maxLength: 15 })
+  @Transform(({ value }) => value?.trim())
   @IsString()
   @IsNotEmpty()
   @Length(3, 15, { message: 'Name must be between 3 and 15 characters' })
@@ -14,6 +16,7 @@ export class BlogInputModel {
     minLength: 3,
     maxLength: 500,
   })
+  @Transform(({ value }) => value?.trim())
   @IsString()
   @IsNotEmpty()
   @Length(3, 500, {
