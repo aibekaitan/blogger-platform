@@ -3,7 +3,7 @@ import { AppModule } from './app.module';
 import { appSetup } from './setup/app.setup';
 import { BadRequestException, ValidationPipe } from '@nestjs/common';
 import * as dotenv from 'dotenv';
-import { RequestLoggerAndLimiterMiddleware } from './modules/user-accounts/adapters/request-logger-limiter.middleware';
+// import { RequestLoggerAndLimiterMiddleware } from './modules/user-accounts/adapters/request-logger-limiter.middleware';
 
 dotenv.config();
 
@@ -25,10 +25,10 @@ async function bootstrap() {
       },
     }),
   );
-  const loggerMiddleware = app.get(RequestLoggerAndLimiterMiddleware);
-
-  // Подключаем как функцию
-  app.use(loggerMiddleware.use.bind(loggerMiddleware));
+  // const loggerMiddleware = app.get(RequestLoggerAndLimiterMiddleware);
+  //
+  // // Подключаем как функцию
+  // app.use(loggerMiddleware.use.bind(loggerMiddleware));
   const PORT = process.env.PORT || 5005; //TODO: move to configService. will be in the following lessons
 
   await app.listen(PORT, () => {

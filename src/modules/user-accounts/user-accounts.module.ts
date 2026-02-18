@@ -15,7 +15,9 @@ import { JwtStrategy } from './strategies/jwt.service';
 import { AuthService } from './application/auth.service';
 import { NodemailerService } from './adapters/nodemailer.service';
 import { RequestLog, RequestLogSchema } from './domain/request-log.schema';
-import { RequestLoggerAndLimiterMiddleware } from './adapters/request-logger-limiter.middleware';
+import { RateLimiterInterceptor } from './adapters/request-logger-limiter.middleware';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+// import { RequestLoggerAndLimiterMiddleware } from './adapters/request-logger-limiter.middleware';
 
 @Module({
   imports: [
@@ -40,7 +42,11 @@ import { RequestLoggerAndLimiterMiddleware } from './adapters/request-logger-lim
     // AuthQueryRepository,
     BcryptService,
     NodemailerService,
-    RequestLoggerAndLimiterMiddleware,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: RateLimiterInterceptor,
+    },
+    // RequestLoggerAndLimiterMiddleware,
   ],
 })
 export class UserAccountsModule {}
