@@ -1,15 +1,23 @@
-export const mapPostToView = (post: any) => ({
-  id: post.id,
-  title: post.title,
-  shortDescription: post.shortDescription,
-  content: post.content,
-  blogId: post.blogId,
-  blogName: post.blogName,
-  createdAt: post.createdAt,
+export const mapPostToView = (post: any) => {
+  const likes = post.extendedLikesInfo || {
+    likesCount: 0,
+    dislikesCount: 0,
+    newestLikes: [],
+  };
 
-  extendedLikesInfo: {
-    ...post.extendedLikesInfo, // ← keep everything that exists
-    myStatus: post.myStatus ?? 'None', // ← only override/add this one
-    // newestLikes already comes sorted from DB or from findById — no need to touch
-  },
-});
+  return {
+    id: post.id,
+    title: post.title,
+    shortDescription: post.shortDescription,
+    content: post.content,
+    blogId: post.blogId,
+    blogName: post.blogName,
+    createdAt: post.createdAt,
+    extendedLikesInfo: {
+      likesCount: likes.likesCount ?? 0,
+      dislikesCount: likes.dislikesCount ?? 0,
+      myStatus: post.myStatus ?? 'None',
+      newestLikes: likes.newestLikes ?? [],
+    },
+  };
+};
