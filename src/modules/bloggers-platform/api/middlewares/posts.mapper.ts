@@ -8,9 +8,8 @@ export const mapPostToView = (post: any) => ({
   createdAt: post.createdAt,
 
   extendedLikesInfo: {
-    likesCount: 0,
-    dislikesCount: 0,
-    myStatus: 'None',
-    newestLikes: [],
+    ...post.extendedLikesInfo, // ← keep everything that exists
+    myStatus: post.myStatus ?? 'None', // ← only override/add this one
+    // newestLikes already comes sorted from DB or from findById — no need to touch
   },
 });
