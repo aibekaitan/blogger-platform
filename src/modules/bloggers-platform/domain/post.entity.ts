@@ -43,6 +43,7 @@ export class Post {
           },
         ],
         default: [],
+        _id: false,
       },
     },
     _id: false,

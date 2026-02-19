@@ -43,6 +43,7 @@ export class PostController {
     @Query() query: any,
     @CurrentUser() currentUser?: JwtUser | null,
   ): Promise<IPagination<any>> {
+    console.log(currentUser);
     // замени any на PostViewModel[]
     const userId = currentUser?.id ?? null;
     return this.postService.getAllPosts(query, userId);

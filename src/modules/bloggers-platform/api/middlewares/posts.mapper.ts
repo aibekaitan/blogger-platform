@@ -16,7 +16,7 @@ export const mapPostToView = (post: any) => {
     extendedLikesInfo: {
       likesCount: likes.likesCount ?? 0,
       dislikesCount: likes.dislikesCount ?? 0,
-      myStatus: post.myStatus ?? 'None',
+      myStatus: post.myStatus ?? likes.myStatus ?? 'None',
       newestLikes: likes.newestLikes ?? [],
     },
   };

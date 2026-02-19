@@ -44,7 +44,7 @@ export class PostRepository {
   ) {
     // await new Promise((resolve) => setTimeout(resolve, 150)); // 150 мс задержки
     console.log(await this.postModel.countDocuments());
-
+    console.log(currentUserId);
     const { pageNumber, pageSize, sortBy, sortDirection } = params;
     const direction = sortDirection === 'asc' ? 1 : -1;
 
@@ -79,7 +79,7 @@ export class PostRepository {
         dislikesCount: 0,
         newestLikes: [],
       };
-
+      console.log(userLikesMap.get(post.id));
       return {
         ...post,
         extendedLikesInfo: {
@@ -89,6 +89,7 @@ export class PostRepository {
           newestLikes: [...extendedLikesInfo.newestLikes].reverse(),
         },
       };
+
     });
 
     return {
@@ -104,6 +105,7 @@ export class PostRepository {
     id: string,
     currentUserId?: string | null,
   ): Promise<PostType | null> {
+    console.log(currentUserId);
     // await new Promise((resolve) => setTimeout(resolve, 150)); // 150 мс задержки
     console.log(await this.postModel.countDocuments());
     const dbPost = await this.postModel.findOne({ id }).lean();
