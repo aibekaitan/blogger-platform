@@ -18,6 +18,7 @@ import { NoRateLimit } from '../../../common/decorators/no-rate-limit.decorator'
 import { JwtAuthGuard } from '../../user-accounts/api/guards/jwt-auth.guard';
 import { LikeStatusInputModel } from '../dto/input-dto/like-status.input';
 import { CommentInputModel } from '../dto/input-dto/comment.input';
+import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 @NoRateLimit()
 @Controller('comments')
 export class CommentsController {
@@ -38,8 +39,18 @@ export class CommentsController {
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
   @HttpCode(204)
-  async deleteComment(@Param('id') id: string): Promise<void> {
-    await this.commentService.delete(id);
+  async deleteComment(
+    @Param('id') id: string,
+    @CurrentUser() currentUser: { id: string },
+  ): Promise<void> {
+    const comment = await this.commentService.getCommentById(
+      id,
+      currentUser.id,
+    );
+    if (!comment) {
+      throw new NotFoundException('Comment not found');
+    }
+    await this.commentService.delete(id, currentUser.id);
   }
   @UseGuards(JwtAuthGuard)
   @Put(':id')
@@ -47,8 +58,9 @@ export class CommentsController {
   async updateComment(
     @Param('id') id: string,
     @Body() dto: CommentInputModel,
+    @CurrentUser() currentUser: { id: string; login: string },
   ): Promise<void> {
-    await this.commentService.update(id, dto);
+    await this.commentService.update(id, dto, currentUser.id);
   }
   @UseGuards(JwtAuthGuard)
   @Put(':id/like-status')

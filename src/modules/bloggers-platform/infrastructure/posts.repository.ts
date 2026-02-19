@@ -42,6 +42,7 @@ export class PostRepository {
     },
     currentUserId?: string | null,
   ) {
+    await new Promise((resolve) => setTimeout(resolve, 150)); // 150 мс задержки
     console.log(await this.postModel.countDocuments());
 
     const { pageNumber, pageSize, sortBy, sortDirection } = params;
@@ -103,6 +104,7 @@ export class PostRepository {
     id: string,
     currentUserId?: string | null,
   ): Promise<PostType | null> {
+    await new Promise((resolve) => setTimeout(resolve, 150)); // 150 мс задержки
     console.log(await this.postModel.countDocuments());
     const dbPost = await this.postModel.findOne({ id }).lean();
 

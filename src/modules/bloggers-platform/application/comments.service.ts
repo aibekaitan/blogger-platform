@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 // import { CommentInputModel } from '../types/comments.dto.ts';
 
 // import { PostQueryRepository } from '../../posts/repositories/post.query.repository';
@@ -25,14 +29,35 @@ export class CommentService {
     return this.postQueryRepository._getInViewComment(comment, currentUserId);
   }
 
-  async delete(commentId: string): Promise<boolean> {
+  async delete(commentId: string, currentUserId: string): Promise<void> {
     const comment = await this.commentRepository.findById(commentId);
-    if (!comment) return false;
+    if (!comment) throw new NotFoundException('Comment not found');
 
-    return await this.commentRepository.delete(commentId);
+    if (comment.commentatorInfo.userId !== currentUserId) {
+      throw new ForbiddenException('Forbidden: not your comment');
+    }
+
+    await this.commentRepository.delete(commentId);
   }
 
-  async update(commentId: string, dto: CommentInputModel): Promise<void> {
+  async update(
+    commentId: string,
+    dto: CommentInputModel,
+    currentUserId: string,
+  ): Promise<void> {
+    const comment = await this.commentRepository.findById(commentId);
+
+    if (!comment) {
+      throw new NotFoundException('Comment not found');
+    }
+
+    // Самое важное — проверка владения
+    if (comment.commentatorInfo.userId !== currentUserId) {
+      throw new ForbiddenException(
+        'Forbidden: you are not the owner of this comment',
+      );
+    }
+
     await this.commentRepository.update(commentId, dto);
   }
 
