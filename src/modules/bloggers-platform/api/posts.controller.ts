@@ -146,17 +146,10 @@ export class PostController {
     @Body() likeDto: LikeStatusInputModel,
     @CurrentUser() currentUser: JwtUser,
   ): Promise<void> {
-    const updated = await this.postService.updateLikeStatus(
+    await this.postService.updateLikeStatus(
       postId,
       currentUser.id,
       likeDto.likeStatus,
     );
-
-    if (!updated) {
-      throw new NotFoundException({
-        message: 'Post not found',
-        field: 'postId',
-      });
-    }
   }
 }

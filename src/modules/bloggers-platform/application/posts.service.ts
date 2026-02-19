@@ -130,7 +130,10 @@ export class PostService {
   ): Promise<boolean | void> {
     const post = await this.postRepository.findById(postId, userId);
     if (!post) {
-      return false;
+      throw new NotFoundException({
+        message: 'Post not found',
+        field: 'postId',
+      });
     }
 
     return this.postRepository.setLikeStatus(postId, userId, likeStatus);
