@@ -200,7 +200,7 @@ export class PostRepository {
 
   async setLikeStatus(postId: string, userId: string, likeStatus: LikeStatus) {
     const user = await this.usersRepository.findById(userId);
-    if (!user) throw new NotFoundException();
+    if (!user) throw new NotFoundException('User not found');
 
     const likeDoc = await this.likeModel
       .findOne({
@@ -210,28 +210,28 @@ export class PostRepository {
       })
       .lean();
 
-    const prevStatus = (likeDoc?.status as LikeStatus) ?? LikeStatus.None;
+    const prevStatus = likeDoc?.status ?? LikeStatus.None;
 
-    if (prevStatus === likeStatus) return;
+    if (prevStatus === likeStatus) return; // ничего не меняем
 
-    const postUpdate: Record<string, unknown> = {};
+    const postUpdate: any = { $inc: {} };
 
+    // Убираем старый статус из счётчиков и newestLikes
     if (prevStatus === LikeStatus.Like) {
-      postUpdate['$inc'] = { 'extendedLikesInfo.likesCount': -1 };
-      postUpdate['$pull'] = { 'extendedLikesInfo.newestLikes': { userId } };
+      postUpdate.$inc['extendedLikesInfo.likesCount'] = -1;
+      postUpdate.$pull = { 'extendedLikesInfo.newestLikes': { userId } };
     }
-
     if (prevStatus === LikeStatus.Dislike) {
-      postUpdate['$inc'] = { 'extendedLikesInfo.dislikesCount': -1 };
+      postUpdate.$inc['extendedLikesInfo.dislikesCount'] = -1;
     }
 
+    // Добавляем новый статус
     if (likeStatus === LikeStatus.Like) {
-      postUpdate['$inc'] = {
-        ...(postUpdate['$inc'] as object),
-        'extendedLikesInfo.likesCount': 1,
-      };
+      postUpdate.$inc['extendedLikesInfo.likesCount'] =
+        postUpdate.$inc['extendedLikesInfo.likesCount'] || 0 + 1;
 
-      postUpdate['$push'] = {
+      // Добавляем в newestLikes и оставляем только последние 3
+      postUpdate.$push = {
         'extendedLikesInfo.newestLikes': {
           $each: [
             {
@@ -240,22 +240,23 @@ export class PostRepository {
               login: user.login,
             },
           ],
-          $slice: -3,
+          $position: 0, // добавляем в начало
+          $slice: 3, // оставляем только первые 3 (самые новые)
         },
       };
     }
 
     if (likeStatus === LikeStatus.Dislike) {
-      postUpdate['$inc'] = {
-        ...(postUpdate['$inc'] as object),
-        'extendedLikesInfo.dislikesCount': 1,
-      };
+      postUpdate.$inc['extendedLikesInfo.dislikesCount'] =
+        postUpdate.$inc['extendedLikesInfo.dislikesCount'] || 0 + 1;
     }
 
-    if (Object.keys(postUpdate).length) {
+    // Применяем обновления поста, если есть что менять
+    if (Object.keys(postUpdate).length > 0) {
       await this.postModel.updateOne({ id: postId }, postUpdate);
     }
 
+    // Обновляем/удаляем запись в likeModel
     if (likeStatus === LikeStatus.None) {
       await this.likeModel.deleteOne({
         parentId: postId,
@@ -264,17 +265,8 @@ export class PostRepository {
       });
     } else {
       await this.likeModel.updateOne(
-        {
-          parentId: postId,
-          parentType: 'Post',
-          authorId: userId,
-        },
-        {
-          $set: {
-            status: likeStatus,
-            createdAt: new Date(),
-          },
-        },
+        { parentId: postId, parentType: 'Post', authorId: userId },
+        { $set: { status: likeStatus, createdAt: new Date().toISOString() } },
         { upsert: true },
       );
     }
