@@ -270,5 +270,11 @@ export class PostRepository {
         { upsert: true },
       );
     }
+    console.log('setLikeStatus finished', {
+      postId,
+      userId,
+      likeStatus,
+      prevStatus,
+    });
   }
 }

@@ -45,6 +45,7 @@ export class Post {
         default: [],
       },
     },
+    default: { likesCount: 0, dislikesCount: 0, newestLikes: [] },
     _id: false,
   })
   extendedLikesInfo: {
