@@ -66,6 +66,7 @@ export class BlogsController {
   ) {
     const blog = await this.blogsService.findById(blogId);
     const userId = currentUser?.id ?? null;
+    console.log(userId);
     if (!blog) {
       throw new NotFoundException('Blog not found');
     }

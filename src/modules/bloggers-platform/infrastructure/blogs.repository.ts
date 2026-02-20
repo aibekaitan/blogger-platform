@@ -109,7 +109,7 @@ export class BlogsRepository {
     // ──────────────────────────────────────────────────────────────
     // Copy-paste/adapt the user likes logic from findAll
     const userLikesMap = new Map<string, LikeStatus>();
-
+    console.log(currentUserId);
     if (currentUserId) {
       const userLikes = await this.likeModel
         .find({
@@ -121,6 +121,7 @@ export class BlogsRepository {
 
       userLikes.forEach((like) => {
         userLikesMap.set(like.parentId.toString(), like.status as LikeStatus);
+        console.log(like.parentId.toString());
       });
     }
     // ──────────────────────────────────────────────────────────────
@@ -137,7 +138,7 @@ export class BlogsRepository {
         extendedLikesInfo: {
           likesCount: extended.likesCount,
           dislikesCount: extended.dislikesCount,
-          myStatus: userLikesMap.get(post._id.toString()) ?? LikeStatus.None, // ← important: .toString()
+          myStatus: userLikesMap.get(post.id.toString()) ?? LikeStatus.None, // ← important: .toString()
           newestLikes: [...extended.newestLikes],
         },
       };
