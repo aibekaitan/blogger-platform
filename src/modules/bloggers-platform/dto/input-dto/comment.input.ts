@@ -1,9 +1,15 @@
 // dto/comment.input.ts
-import { IsNotEmpty, IsString, Length } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  Length,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 
 export class CommentInputModel {
   @IsString()
-  @IsNotEmpty()
-  @Length(20, 300)
+  @MinLength(20, { message: 'Comment content must be at least 20 characters' })
+  @MaxLength(300)
   content: string;
 }

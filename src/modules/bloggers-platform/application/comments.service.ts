@@ -51,7 +51,7 @@ export class CommentService {
       throw new NotFoundException('Comment not found');
     }
 
-    // Самое важное — проверка владения
+
     if (comment.commentatorInfo.userId !== currentUserId) {
       throw new ForbiddenException(
         'Forbidden: you are not the owner of this comment',
@@ -73,6 +73,11 @@ export class CommentService {
     userId: string,
     likeStatus: LikeStatus,
   ): Promise<void> {
+    const comment = await this.commentRepository.findById(commentId);
+
+    if (!comment) {
+      throw new NotFoundException('Comment not found');
+    }
     await this.commentRepository.setLikeStatus(commentId, userId, likeStatus);
   }
 }

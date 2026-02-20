@@ -14,7 +14,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { BlogsService } from '../application/blogs.service'; // подправь путь
+import { BlogsService } from '../application/blogs.service';
 import { BlogInputModel } from '../dto/input-dto/blog.input';
 // import { BlogViewModel } from './types/blog.view'; // или твой view model
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';

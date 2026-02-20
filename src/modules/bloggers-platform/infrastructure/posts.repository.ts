@@ -86,10 +86,9 @@ export class PostRepository {
           likesCount: extendedLikesInfo.likesCount,
           dislikesCount: extendedLikesInfo.dislikesCount,
           myStatus: userLikesMap.get(post.id) ?? LikeStatus.None,
-          newestLikes: [...extendedLikesInfo.newestLikes].reverse(),
+          newestLikes: [...extendedLikesInfo.newestLikes],
         },
       };
-
     });
 
     return {
@@ -132,9 +131,7 @@ export class PostRepository {
         likesCount: dbPost.extendedLikesInfo?.likesCount ?? 0,
         dislikesCount: dbPost.extendedLikesInfo?.dislikesCount ?? 0,
         myStatus,
-        newestLikes: [
-          ...(dbPost.extendedLikesInfo?.newestLikes ?? []),
-        ].reverse(),
+        newestLikes: [...(dbPost.extendedLikesInfo?.newestLikes ?? [])],
       },
     };
   }

@@ -19,11 +19,12 @@ import { JwtAuthGuard } from '../../user-accounts/api/guards/jwt-auth.guard';
 import { LikeStatusInputModel } from '../dto/input-dto/like-status.input';
 import { CommentInputModel } from '../dto/input-dto/comment.input';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
+import { OptionalJwtAuthGuard } from '../../user-accounts/api/guards/optional-jwt-auth.guard';
 @NoRateLimit()
 @Controller('comments')
 export class CommentsController {
   constructor(private readonly commentService: CommentService) {}
-
+  @UseGuards(OptionalJwtAuthGuard)
   @Get(':id')
   async getCommentById(
     @Param('id') id: string,
@@ -70,7 +71,7 @@ export class CommentsController {
     @Req() req,
     @Body() dto: LikeStatusInputModel,
   ): Promise<void> {
-    const userId = req.user!.id; // предполагаем, что есть авторизация
+    const userId = req.user!.id;
     await this.commentService.setLikeStatus(id, userId, dto.likeStatus);
   }
 }

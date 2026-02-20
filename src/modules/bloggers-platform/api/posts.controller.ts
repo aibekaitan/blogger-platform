@@ -27,8 +27,8 @@ import { IPagination } from '../../../common/types/pagination';
 import { CommentViewModel } from '../dto/comments.dto';
 
 interface JwtUser {
-  id: string; // userId из токена
-  // deviceId?: string; // если нужно
+  id: string;
+  // deviceId?: string;
 }
 
 @NoRateLimit()
@@ -36,7 +36,7 @@ interface JwtUser {
 export class PostController {
   constructor(private readonly postService: PostService) {}
 
-  // GET /posts — все посты с пагинацией (myStatus зависит от текущего юзера)
+
   @UseGuards(OptionalJwtAuthGuard)
   @Get()
   async getAllPosts(
@@ -44,12 +44,12 @@ export class PostController {
     @CurrentUser() currentUser?: JwtUser | null,
   ): Promise<IPagination<any>> {
     console.log(currentUser);
-    // замени any на PostViewModel[]
+
     const userId = currentUser?.id ?? null;
     return this.postService.getAllPosts(query, userId);
   }
 
-  // POST /posts — создание поста (только Basic Auth)
+
   @UseGuards(BasicAuthGuard)
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -58,7 +58,7 @@ export class PostController {
     return mapPostToView(created);
   }
 
-  // GET /posts/:id — пост по id (myStatus опционально)
+
   @UseGuards(OptionalJwtAuthGuard)
   @Get(':id')
   async getPostById(
@@ -73,7 +73,7 @@ export class PostController {
     return mapPostToView(post);
   }
 
-  // PUT /posts/:id — обновление поста (Basic Auth)
+
   @UseGuards(BasicAuthGuard)
   @Put(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -87,7 +87,7 @@ export class PostController {
     }
   }
 
-  // DELETE /posts/:id — удаление поста (Basic Auth)
+
   @UseGuards(BasicAuthGuard)
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -98,7 +98,7 @@ export class PostController {
     }
   }
 
-  // GET /posts/:postId/comments — комментарии к посту (myStatus опционально)
+
   @UseGuards(OptionalJwtAuthGuard)
   @Get(':postId/comments')
   async getCommentsByPostId(
@@ -108,7 +108,7 @@ export class PostController {
   ): Promise<IPagination<CommentViewModel[]>> {
     const userId = currentUser?.id ?? null;
 
-    // Проверка существования поста (без userId, т.к. просто existence check)
+
     const post = await this.postService.getPostById(postId, null);
     if (!post) {
       throw new NotFoundException({
@@ -120,7 +120,7 @@ export class PostController {
     return this.postService.getCommentsByPostId(postId, query, userId);
   }
 
-  // POST /posts/:postId/comments — создание комментария (обязательный JWT)
+
   @UseGuards(JwtAuthGuard)
   @Post(':postId/comments')
   @HttpCode(HttpStatus.CREATED)
@@ -129,16 +129,14 @@ export class PostController {
     @Body() commentDto: { content: string }, // TODO: замени на CommentInputModel
     @CurrentUser() currentUser: JwtUser,
   ): Promise<CommentViewModel> {
-    // currentUser гарантированно есть (JwtAuthGuard)
     const createdComment = await this.postService.createComment(
       postId,
       commentDto,
       currentUser.id,
     );
-    return createdComment; // предполагаем, что сервис возвращает view
+    return createdComment;
   }
 
-  // PUT /posts/:postId/like-status — лайк/дизлайк (обязательный JWT)
   @UseGuards(JwtAuthGuard)
   @Put(':postId/like-status')
   @HttpCode(HttpStatus.NO_CONTENT)
