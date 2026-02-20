@@ -54,13 +54,21 @@ export class BlogsService {
     return this.blogsRepository.delete(id);
   }
 
-  async findPostsByBlogId(blogId: string, query: BaseQueryParams) {
-    const result = await this.blogsRepository.findPostsByBlogId(blogId, {
-      pageNumber: query.pageNumber,
-      pageSize: query.pageSize,
-      sortBy: query.sortBy,
-      sortDirection: query.sortDirection,
-    });
+  async findPostsByBlogId(
+    blogId: string,
+    query: BaseQueryParams,
+    currentUserId?: string | null,
+  ) {
+    const result = await this.blogsRepository.findPostsByBlogId(
+      blogId,
+      {
+        pageNumber: query.pageNumber,
+        pageSize: query.pageSize,
+        sortBy: query.sortBy,
+        sortDirection: query.sortDirection,
+      },
+      currentUserId,
+    );
 
     if (!result) {
       return {

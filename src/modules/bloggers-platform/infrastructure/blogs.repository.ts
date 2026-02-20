@@ -7,14 +7,17 @@ import type { PostModelType } from '../domain/post.entity';
 import { PostInputModel } from '../dto/input-dto/post.input';
 import { v4 as uuidv4 } from 'uuid';
 import { mapBlogToView } from '../api/middlewares/blog.mapper';
-import { LikeStatus } from '../domain/like.entity';
+import { Like, LikeDocument, LikeStatus } from '../domain/like.entity';
 import { mapPostToView } from '../api/middlewares/posts.mapper';
 import { CreatePostForBlogInputModel } from '../dto/input-dto/create-post-for-blog.input';
+import { Model } from 'mongoose';
 @Injectable()
 export class BlogsRepository {
   constructor(
     @InjectModel(Blog.name) private BlogModel: BlogModelType,
     @InjectModel(Post.name) private PostModel: PostModelType,
+    @InjectModel(Like.name)
+    private readonly likeModel: Model<LikeDocument>,
   ) {}
 
   async findById(id: string): Promise<BlogDocument | null> {
@@ -86,6 +89,7 @@ export class BlogsRepository {
       sortBy: string;
       sortDirection: string;
     },
+    currentUserId?: string | null, // ← add this parameter
   ) {
     const blogExists = await this.findById(blogId);
     if (!blogExists) return null;
@@ -96,10 +100,48 @@ export class BlogsRepository {
 
     const totalCount = await this.PostModel.countDocuments(filter);
 
-    const items = await this.PostModel.find(filter)
+    const dbItems = await this.PostModel.find(filter) // ← renamed to dbItems for clarity
       .sort({ [params.sortBy]: direction })
       .skip((params.pageNumber - 1) * params.pageSize)
-      .limit(params.pageSize);
+      .limit(params.pageSize)
+      .lean(); // ← .lean() is good here (same as in findAll)
+
+    // ──────────────────────────────────────────────────────────────
+    // Copy-paste/adapt the user likes logic from findAll
+    const userLikesMap = new Map<string, LikeStatus>();
+
+    if (currentUserId) {
+      const userLikes = await this.likeModel
+        .find({
+          parentType: 'Post',
+          authorId: currentUserId, // ← assuming your field is authorId
+        })
+        .select('parentId status')
+        .lean();
+
+      userLikes.forEach((like) => {
+        userLikesMap.set(like.parentId.toString(), like.status as LikeStatus);
+      });
+    }
+    // ──────────────────────────────────────────────────────────────
+
+    const items = dbItems.map((post) => {
+      const extended = post.extendedLikesInfo ?? {
+        likesCount: 0,
+        dislikesCount: 0,
+        newestLikes: [],
+      };
+
+      return {
+        ...post,
+        extendedLikesInfo: {
+          likesCount: extended.likesCount,
+          dislikesCount: extended.dislikesCount,
+          myStatus: userLikesMap.get(post._id.toString()) ?? LikeStatus.None, // ← important: .toString()
+          newestLikes: [...extended.newestLikes],
+        },
+      };
+    });
 
     return {
       pagesCount: Math.ceil(totalCount / params.pageSize),

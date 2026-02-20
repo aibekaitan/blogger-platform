@@ -27,6 +27,8 @@ import { NoRateLimit } from '../../../common/decorators/no-rate-limit.decorator'
 import { BasicAuthGuard } from '../../user-accounts/api/guards/basic-auth.guard';
 import { OptionalJwtAuthGuard } from '../../user-accounts/api/guards/optional-jwt-auth.guard';
 import { CreatePostForBlogInputModel } from '../dto/input-dto/create-post-for-blog.input';
+import { CurrentUser } from '../../../common/decorators/current-user.decorator';
+import { JwtUser } from './posts.controller';
 @NoRateLimit()
 @ApiTags('Blogs')
 @Controller('blogs')
@@ -60,15 +62,17 @@ export class BlogsController {
   async getPostsByBlogId(
     @Param('id') blogId: string,
     @Query() queryParams: BaseQueryParams,
+    @CurrentUser() currentUser?: JwtUser | null,
   ) {
     const blog = await this.blogsService.findById(blogId);
-
+    const userId = currentUser?.id ?? null;
     if (!blog) {
       throw new NotFoundException('Blog not found');
     }
     const result = await this.blogsService.findPostsByBlogId(
       blogId,
       queryParams,
+      userId,
     );
 
     if (result.items.length === 0) {

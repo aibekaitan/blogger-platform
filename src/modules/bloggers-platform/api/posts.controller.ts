@@ -25,8 +25,9 @@ import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import type { CommentsQueryFieldsType } from '../types/comments.queryFields.type';
 import { IPagination } from '../../../common/types/pagination';
 import { CommentViewModel } from '../dto/comments.dto';
+import { CommentInputModel } from '../dto/input-dto/comment.input';
 
-interface JwtUser {
+export interface JwtUser {
   id: string;
   // deviceId?: string;
 }
@@ -126,7 +127,7 @@ export class PostController {
   @HttpCode(HttpStatus.CREATED)
   async createComment(
     @Param('postId') postId: string,
-    @Body() commentDto: { content: string }, // TODO: замени на CommentInputModel
+    @Body() commentDto: CommentInputModel,
     @CurrentUser() currentUser: JwtUser,
   ): Promise<CommentViewModel> {
     const createdComment = await this.postService.createComment(
