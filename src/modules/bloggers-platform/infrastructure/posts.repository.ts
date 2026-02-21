@@ -42,9 +42,6 @@ export class PostRepository {
     },
     currentUserId?: string | null,
   ) {
-    // await new Promise((resolve) => setTimeout(resolve, 150)); // 150 мс задержки
-    console.log(await this.postModel.countDocuments());
-    console.log(currentUserId);
     const { pageNumber, pageSize, sortBy, sortDirection } = params;
     const direction = sortDirection === 'asc' ? 1 : -1;
 
@@ -79,7 +76,6 @@ export class PostRepository {
         dislikesCount: 0,
         newestLikes: [],
       };
-      console.log(userLikesMap.get(post.id));
       return {
         ...post,
         extendedLikesInfo: {
@@ -105,7 +101,6 @@ export class PostRepository {
     currentUserId?: string | null,
   ): Promise<PostType | null> {
     console.log(currentUserId);
-    // await new Promise((resolve) => setTimeout(resolve, 150)); // 150 мс задержки
     console.log(await this.postModel.countDocuments());
     const dbPost = await this.postModel.findOne({ id }).lean();
     console.log(dbPost);
@@ -213,11 +208,10 @@ export class PostRepository {
 
     const prevStatus = likeDoc?.status ?? LikeStatus.None;
 
-    if (prevStatus === likeStatus) return; // ничего не меняем
+    if (prevStatus === likeStatus) return;
 
     const postUpdate: any = { $inc: {} };
 
-    // Убираем старый статус из счётчиков и newestLikes
     if (prevStatus === LikeStatus.Like) {
       postUpdate.$inc['extendedLikesInfo.likesCount'] = -1;
       postUpdate.$pull = { 'extendedLikesInfo.newestLikes': { userId } };
@@ -226,12 +220,10 @@ export class PostRepository {
       postUpdate.$inc['extendedLikesInfo.dislikesCount'] = -1;
     }
 
-    // Добавляем новый статус
     if (likeStatus === LikeStatus.Like) {
       postUpdate.$inc['extendedLikesInfo.likesCount'] =
         postUpdate.$inc['extendedLikesInfo.likesCount'] || 0 + 1;
 
-      // Добавляем в newestLikes и оставляем только последние 3
       postUpdate.$push = {
         'extendedLikesInfo.newestLikes': {
           $each: [
@@ -241,8 +233,8 @@ export class PostRepository {
               login: user.login,
             },
           ],
-          $position: 0, // добавляем в начало
-          $slice: 3, // оставляем только первые 3 (самые новые)
+          $position: 0,
+          $slice: 3,
         },
       };
     }
@@ -252,12 +244,10 @@ export class PostRepository {
         postUpdate.$inc['extendedLikesInfo.dislikesCount'] || 0 + 1;
     }
 
-    // Применяем обновления поста, если есть что менять
     if (Object.keys(postUpdate).length > 0) {
       await this.postModel.updateOne({ id: postId }, postUpdate);
     }
 
-    // Обновляем/удаляем запись в likeModel
     if (likeStatus === LikeStatus.None) {
       await this.likeModel.deleteOne({
         parentId: postId,

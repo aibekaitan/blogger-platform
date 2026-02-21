@@ -22,14 +22,12 @@ export class BasicAuthGuard implements CanActivate {
       throw new UnauthorizedException('Invalid authorization type');
     }
 
-    // декодируем base64 → username:password
     const base64Credentials = authHeader.split(' ')[1];
     const credentials = Buffer.from(base64Credentials, 'base64').toString(
       'ascii',
     );
     const [username, password] = credentials.split(':');
 
-    // Проверяем именно admin:qwerty (как в большинстве автотестов)
     if (username === 'admin' && password === 'qwerty') {
       return true;
     }

@@ -41,7 +41,7 @@ import { CommentsController } from './api/comments.controller';
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({
       secret: appConfig.AC_SECRET,
-      signOptions: { expiresIn: '5m' }, // как в задании — минимум 5 минут
+      signOptions: { expiresIn: '5m' },
     }),
   ],
 

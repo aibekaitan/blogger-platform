@@ -41,12 +41,10 @@ export class AuthService {
     const user = await this.validateUserCredentials(loginOrEmail, password);
 
     const userId = user._id.toString();
-    const login = user.login; // ← берём login из пользователя
+    const login = user.login;
 
     const accessToken = await this.generateAccessToken(userId, login);
     const refreshToken = await this.generateRefreshToken(userId, login);
-
-    // Если потом добавишь devices — раскомментируй
     // const deviceId = randomUUID();
     // await this.devicesRepository.upsertDevice({ ... });
 
@@ -86,11 +84,9 @@ export class AuthService {
     login: string,
   ): Promise<string> {
     const payload = { userId, login };
-    return this.jwtService.signAsync(payload); // без expiresIn — вечный или долгий
+    return this.jwtService.signAsync(payload);
   }
 
-  // Остальные методы (register, confirm, recovery и т.д.) остаются без изменений
-  // ...
   async registerUser(
     login: string,
     password: string,
@@ -200,7 +196,6 @@ export class AuthService {
   async passwordRecovery(email: string): Promise<void> {
     const user = await this.usersRepository.findByLoginOrEmail(email);
     if (!user) {
-      // По заданию — всегда 204, даже если email не существует
       return;
     }
     user.passwordRecoveryCode = randomUUID();

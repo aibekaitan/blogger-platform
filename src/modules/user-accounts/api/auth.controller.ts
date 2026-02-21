@@ -13,13 +13,11 @@ import {
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 // import { AuthService } from './auth.service'; // предполагаем, что лежит в той же папке или ./application/auth.service
-// import { Result, ResultStatus } from '../../common/result/resultCode'; // адаптируй путь
+// import { Result, ResultStatus } from '../../common/result/resultCode';
 // import { resultCodeToHttpException } from '../../common/result/resultCodeToHttpException';
 // import { HttpStatuses } from '../../common/types/httpStatuses';
 
-// DTO — создай их отдельно (рекомендую)
 
-// Guards (создай их позже)
 // import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { LoginInputDto } from './input-dto/login.input.dto';
 import { UserInputDto } from './input-dto/users.input.dto';
@@ -62,7 +60,7 @@ export class AuthController {
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', // в dev можно false
+      secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
     });
 
@@ -119,7 +117,7 @@ export class AuthController {
   //     sameSite: 'strict',
   //   });
   //
-  //   // ничего не возвращаем (204)
+  //
   // }
 
   @Post('registration')
@@ -134,8 +132,6 @@ export class AuthController {
     // if (result.status !== ResultStatus.Success) {
     //   throw new BadRequestException(result.extensions);
     // }
-
-    // 204 — ничего не возвращаем
   }
 
   @Post('registration-confirmation')
@@ -171,7 +167,6 @@ export class AuthController {
   @Post('password-recovery')
   @HttpCode(HttpStatus.NO_CONTENT)
   async passwordRecovery(@Body() emailDto: PasswordRecoveryInputDto) {
-    // всегда 204, даже если email не существует
     await this.authService.passwordRecovery(emailDto.email);
   }
 
@@ -194,7 +189,7 @@ export class AuthController {
   @Get('me')
   @HttpCode(HttpStatus.OK)
   async getMe(@Req() req) {
-    const userId = req.user.userId; // или req.user.id — зависит от того, как ты payload делаешь
+    const userId = req.user.userId;
 
     if (!userId) {
       throw new UnauthorizedException();

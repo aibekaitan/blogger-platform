@@ -31,7 +31,7 @@ export class User {
   @Prop({ default: '' })
   refreshToken?: string;
 
-  @Prop({ default: () => randomUUID() }) // ← вот здесь randomUUID() для passwordRecoveryCode
+  @Prop({ default: () => randomUUID() })
   passwordRecoveryCode: string;
 
   @Prop({
@@ -42,7 +42,7 @@ export class User {
     },
     default: () => ({
       confirmationCode: randomUUID(),
-      expirationDate: new Date(Date.now() + 60 * 60 * 1000), // 1 час по умолчанию
+      expirationDate: new Date(Date.now() + 60 * 60 * 1000),
       isConfirmed: false,
     }),
   })

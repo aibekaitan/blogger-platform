@@ -27,7 +27,6 @@ import { BasicAuthGuard } from './guards/basic-auth.guard';
 @NoRateLimit()
 @Controller('users')
 @UseGuards(BasicAuthGuard)
-// путь /users
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 

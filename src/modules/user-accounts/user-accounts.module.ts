@@ -26,10 +26,10 @@ import { BasicAuthGuard } from './api/guards/basic-auth.guard';
     MongooseModule.forFeature([
       { name: RequestLog.name, schema: RequestLogSchema },
     ]),
-    PassportModule.register({ defaultStrategy: 'jwt' }), // опционально, но полезно
+    PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({
       secret: appConfig.AC_SECRET,
-      signOptions: { expiresIn: Number(appConfig.AC_TIME) }, // '5m' или Number
+      signOptions: { expiresIn: Number(appConfig.AC_TIME) },
     }),
   ],
   controllers: [UsersController, AuthController, SecurityDevicesController],

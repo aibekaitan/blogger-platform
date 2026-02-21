@@ -20,9 +20,9 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     }
 
     return {
-      id: payload.userId, // для @CurrentUser() { id: string }
+      id: payload.userId,
       login: payload.login || 'Unknown',
-      deviceId: payload.deviceId || null, // если потом добавишь — будет работать
+      deviceId: payload.deviceId || null,
     };
   }
 }

@@ -106,11 +106,10 @@ export class PostService {
       userId,
     );
 
-    // Возвращаем view-модель с myStatus
+
     return this.postQueryRepository._getInViewComment(createdComment, userId);
   }
 
-  // PUT /posts/:postId/like-status
   async updateLikeStatus(
     postId: string,
     userId: string,

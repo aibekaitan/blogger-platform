@@ -17,7 +17,6 @@ import {
   User,
   UserDocument,
 } from '../../modules/user-accounts/domain/user.entity';
-// ... остальные сущности (Like, RequestLog и т.д.)
 
 @Injectable()
 export class TestingService {
@@ -26,7 +25,6 @@ export class TestingService {
     @InjectModel(Post.name) private postModel: Model<PostDocument>,
     @InjectModel(Comment.name) private commentModel: Model<CommentDocument>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
-    // ... добавь все остальные модели, которые нужно чистить
     // @InjectModel(Like.name) private likeModel: Model<LikeDocument>,
     // @InjectModel(RequestLog.name) private requestLogModel: Model<RequestLogDocument>,
   ) {}

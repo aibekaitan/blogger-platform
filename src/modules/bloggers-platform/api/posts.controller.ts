@@ -37,7 +37,6 @@ export interface JwtUser {
 export class PostController {
   constructor(private readonly postService: PostService) {}
 
-
   @UseGuards(OptionalJwtAuthGuard)
   @Get()
   async getAllPosts(
@@ -50,7 +49,6 @@ export class PostController {
     return this.postService.getAllPosts(query, userId);
   }
 
-
   @UseGuards(BasicAuthGuard)
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -58,7 +56,6 @@ export class PostController {
     const created = await this.postService.createPost(dto);
     return mapPostToView(created);
   }
-
 
   @UseGuards(OptionalJwtAuthGuard)
   @Get(':id')
@@ -74,7 +71,6 @@ export class PostController {
     return mapPostToView(post);
   }
 
-
   @UseGuards(BasicAuthGuard)
   @Put(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -88,7 +84,6 @@ export class PostController {
     }
   }
 
-
   @UseGuards(BasicAuthGuard)
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -99,7 +94,6 @@ export class PostController {
     }
   }
 
-
   @UseGuards(OptionalJwtAuthGuard)
   @Get(':postId/comments')
   async getCommentsByPostId(
@@ -108,7 +102,6 @@ export class PostController {
     @CurrentUser() currentUser?: JwtUser | null,
   ): Promise<IPagination<CommentViewModel[]>> {
     const userId = currentUser?.id ?? null;
-
 
     const post = await this.postService.getPostById(postId, null);
     if (!post) {
@@ -120,7 +113,6 @@ export class PostController {
 
     return this.postService.getCommentsByPostId(postId, query, userId);
   }
-
 
   @UseGuards(JwtAuthGuard)
   @Post(':postId/comments')
