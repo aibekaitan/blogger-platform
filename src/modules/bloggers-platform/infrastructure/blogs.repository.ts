@@ -89,7 +89,7 @@ export class BlogsRepository {
       sortBy: string;
       sortDirection: string;
     },
-    currentUserId?: string | null, // ← add this parameter
+    currentUserId?: string | null,
   ) {
     const blogExists = await this.findById(blogId);
     if (!blogExists) return null;
@@ -100,21 +100,21 @@ export class BlogsRepository {
 
     const totalCount = await this.PostModel.countDocuments(filter);
 
-    const dbItems = await this.PostModel.find(filter) // ← renamed to dbItems for clarity
+    const dbItems = await this.PostModel.find(filter)
       .sort({ [params.sortBy]: direction })
       .skip((params.pageNumber - 1) * params.pageSize)
       .limit(params.pageSize)
-      .lean(); // ← .lean() is good here (same as in findAll)
+      .lean();
 
-    // ──────────────────────────────────────────────────────────────
-    // Copy-paste/adapt the user likes logic from findAll
+
+
     const userLikesMap = new Map<string, LikeStatus>();
     console.log(currentUserId);
     if (currentUserId) {
       const userLikes = await this.likeModel
         .find({
           parentType: 'Post',
-          authorId: currentUserId, // ← assuming your field is authorId
+          authorId: currentUserId,
         })
         .select('parentId status')
         .lean();
@@ -124,7 +124,7 @@ export class BlogsRepository {
         console.log(like.parentId.toString());
       });
     }
-    // ──────────────────────────────────────────────────────────────
+
 
     const items = dbItems.map((post) => {
       const extended = post.extendedLikesInfo ?? {
@@ -138,7 +138,7 @@ export class BlogsRepository {
         extendedLikesInfo: {
           likesCount: extended.likesCount,
           dislikesCount: extended.dislikesCount,
-          myStatus: userLikesMap.get(post.id.toString()) ?? LikeStatus.None, // ← important: .toString()
+          myStatus: userLikesMap.get(post.id.toString()) ?? LikeStatus.None,
           newestLikes: [...extended.newestLikes],
         },
       };

@@ -16,10 +16,9 @@ import {
 } from '@nestjs/common';
 import { BlogsService } from '../application/blogs.service';
 import { BlogInputModel } from '../dto/input-dto/blog.input';
-// import { BlogViewModel } from './types/blog.view'; // или твой view model
+// import { BlogViewModel } from './types/blog.view';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { BaseQueryParams } from '../../../core/dto/base.query-params.input-dto';
-import { PostInputModel } from '../dto/input-dto/post.input';
 import { mapBlogToView } from './middlewares/blog.mapper';
 import { mapPostToView } from './middlewares/posts.mapper';
 import { NoRateLimit } from '../../../common/decorators/no-rate-limit.decorator';

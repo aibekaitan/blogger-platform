@@ -20,7 +20,6 @@ export class PostService {
     private readonly commentRepository: CommentRepository,
   ) {}
 
-
   async getAllPosts(query: any, currentUserId?: string | null) {
     const pageNumber = Number(query.pageNumber) || 1;
     const pageSize = Number(query.pageSize) || 10;
@@ -33,13 +32,11 @@ export class PostService {
     );
   }
 
-
   async getPostById(postId: string, currentUserId?: string | null) {
     const post = await this.postRepository.findById(postId, currentUserId);
     if (!post) return null;
     return mapPostToView(post);
   }
-
 
   async createPost(dto: PostInputModel) {
     console.log(dto);
@@ -53,7 +50,6 @@ export class PostService {
     return mapPostToView(createdPost);
   }
 
-
   async updatePost(postId: string, dto: PostInputModel): Promise<boolean> {
     const blog = await this.blogRepository.findById(dto.blogId);
 
@@ -66,12 +62,10 @@ export class PostService {
     return updateResult.matchedCount === 1;
   }
 
-
   async deletePost(postId: string): Promise<boolean> {
     const deleteResult = await this.postRepository.delete(postId);
     return deleteResult.deletedCount === 1;
   }
-
 
   async getCommentsByPostId(
     postId: string,
@@ -96,26 +90,20 @@ export class PostService {
     );
   }
 
-
   async createComment(
     postId: string,
     dto: CommentInputModel,
     userId: string,
   ): Promise<CommentViewModel> {
-
     const post = await this.postRepository.findById(postId, userId);
     if (!post) {
       throw new NotFoundException('Post not found');
     }
 
-
     const createdComment = await this.commentRepository.create(
       dto,
       postId,
       userId,
-      // userLogin
-      // Если его нет в currentUser — добавь в JwtStrategy или вытащи из usersService
-      'temp-login', // ← временно, замени на реальный userLogin
     );
 
     // Возвращаем view-модель с myStatus
@@ -135,7 +123,6 @@ export class PostService {
         field: 'postId',
       });
     }
-
 
     return this.postRepository.setLikeStatus(postId, userId, likeStatus);
   }

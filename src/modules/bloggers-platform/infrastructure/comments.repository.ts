@@ -1,5 +1,5 @@
 // src/comments/infrastructure/comment.repository.ts
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import {
@@ -10,6 +10,7 @@ import {
 } from '../dto/comments.dto';
 import { Comment, CommentDocument } from '../domain/comment.entity';
 import { Like, LikeDocument, LikeStatus } from '../domain/like.entity';
+import { UsersRepository } from '../../user-accounts/infrastructure/users.repository';
 
 @Injectable()
 export class CommentRepository {
@@ -19,17 +20,24 @@ export class CommentRepository {
 
     @InjectModel(Like.name)
     private readonly likeModel: Model<LikeDocument>,
+    private readonly usersRepository: UsersRepository,
   ) {}
 
-  // Новый метод: создание комментария
   async create(
     dto: CommentInputModel,
     postId: string,
     userId: string,
-    userLogin: string, // нужно передать login пользователя
   ): Promise<CommentDB> {
+    const user = await this.usersRepository.findById(userId);
+
+    if (!user) {
+      throw new NotFoundException(`User with id ${userId} not found`);
+    }
+
+    const userLogin = user.login;
+
     const newComment = new this.commentModel({
-      id: crypto.randomUUID(), // или используй uuid.v4() если импортируешь
+      id: crypto.randomUUID(),
       postId,
       content: dto.content.trim(),
       commentatorInfo: {
@@ -41,7 +49,6 @@ export class CommentRepository {
 
     await newComment.save();
 
-    // Возвращаем lean-версию без лишних полей Mongoose
     return newComment.toObject({
       versionKey: false,
       transform: (doc, ret) => {

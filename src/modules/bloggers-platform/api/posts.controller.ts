@@ -15,7 +15,7 @@ import {
 import { PostService } from '../application/posts.service';
 import { PostInputModel } from '../dto/input-dto/post.input';
 import { LikeStatusInputModel } from '../dto/input-dto/like-status.input';
-// import { CommentInputModel } from '../dto/input-dto/comment.input'; // создай этот DTO ниже
+// import { CommentInputModel } from '../dto/input-dto/comment.input';
 import { mapPostToView } from './middlewares/posts.mapper';
 import { NoRateLimit } from '../../../common/decorators/no-rate-limit.decorator';
 import { BasicAuthGuard } from '../../user-accounts/api/guards/basic-auth.guard';
