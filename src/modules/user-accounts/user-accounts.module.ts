@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { UsersController } from './api/users.controller';
-import { UsersService } from './application/users.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from './domain/user.entity';
 import { UsersRepository } from './infrastructure/users.repository';
@@ -18,6 +17,10 @@ import { RequestLog, RequestLogSchema } from './domain/request-log.schema';
 import { RateLimiterInterceptor } from './adapters/request-logger-limiter.middleware';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { BasicAuthGuard } from './api/guards/basic-auth.guard';
+import { CqrsModule } from '@nestjs/cqrs';
+import { CreateUserUseCase } from './application/usecases/create-user.usecase';
+import { DeleteUserUseCase } from './application/usecases/delete-user.usecase';
+import { GetAllUsersHandler } from './application/usecases/get.all.users.usecase';
 // import { RequestLoggerAndLimiterMiddleware } from './adapters/request-logger-limiter.middleware';
 
 @Module({
@@ -31,11 +34,11 @@ import { BasicAuthGuard } from './api/guards/basic-auth.guard';
       secret: appConfig.AC_SECRET,
       signOptions: { expiresIn: Number(appConfig.AC_TIME) },
     }),
+    CqrsModule,
   ],
   controllers: [UsersController, AuthController, SecurityDevicesController],
   providers: [
     AuthService,
-    UsersService,
     UsersRepository,
     UsersQueryRepository,
     JwtStrategy,
@@ -48,6 +51,10 @@ import { BasicAuthGuard } from './api/guards/basic-auth.guard';
       provide: APP_INTERCEPTOR,
       useClass: RateLimiterInterceptor,
     },
+    CreateUserUseCase,
+    DeleteUserUseCase,
+    // UpdateUserUseCase,
+    GetAllUsersHandler,
     // RequestLoggerAndLimiterMiddleware,
   ],
 })

@@ -41,11 +41,4 @@ export class IsEmailUnique implements ValidatorConstraintInterface {
 }
 
 
-export class CreateUserDto {
-  @IsNotEmpty()
-  @IsEmail({}, { message: 'Email is not correct' })
-  @Validate(IsEmailUnique)
-  email: string;
 
-  // TODO: Другие поля, например login, password и т.д.
-}
