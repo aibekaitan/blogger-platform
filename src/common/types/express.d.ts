@@ -1,8 +1,7 @@
-// src/types/express.d.ts
-import { Request } from 'express';
+import { JwtPayload } from './jwt-payload.interface';
 
 declare module 'express' {
   interface Request {
-    ip?: string;
+    user?: JwtPayload;
   }
 }

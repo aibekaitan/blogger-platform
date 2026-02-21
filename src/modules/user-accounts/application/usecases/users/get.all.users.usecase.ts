@@ -1,9 +1,9 @@
 import { QueryHandler, IQueryHandler } from '@nestjs/cqrs';
 
-import { UsersQueryRepository } from '../../infrastructure/query/users.query-repository';
-import { IUserView } from '../../types/user.view.interface';
-import { UsersQueryFieldsType } from '../../types/users.queryFields.type';
-import { IPagination } from '../../../../common/types/pagination';
+import { UsersQueryRepository } from '../../../infrastructure/query/users.query-repository';
+import { IUserView } from '../../../types/user.view.interface';
+import { UsersQueryFieldsType } from '../../../types/users.queryFields.type';
+import { IPagination } from '../../../../../common/types/pagination';
 
 export class GetAllUsersQuery {
   constructor(public readonly query: UsersQueryFieldsType) {}

@@ -1,10 +1,10 @@
 import { Command, CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { v4 as uuidv4 } from 'uuid';
-import { BcryptService } from '../../adapters/bcrypt.service';
-import { UsersQueryRepository } from '../../infrastructure/query/users.query-repository';
-import { UserInputDto } from '../../api/input-dto/users.input.dto';
-import { IUserView } from '../../types/user.view.interface';
-import { UsersRepository } from '../../infrastructure/users.repository';
+import { BcryptService } from '../../../adapters/bcrypt.service';
+import { UsersQueryRepository } from '../../../infrastructure/query/users.query-repository';
+import { UserInputDto } from '../../../api/input-dto/users.input.dto';
+import { IUserView } from '../../../types/user.view.interface';
+import { UsersRepository } from '../../../infrastructure/users.repository';
 
 export class CreateUserCommand extends Command<IUserView> {
   constructor(public readonly dto: UserInputDto) {

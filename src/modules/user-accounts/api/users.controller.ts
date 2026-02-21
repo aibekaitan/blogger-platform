@@ -21,9 +21,9 @@ import type { UsersQueryFieldsType } from '../types/users.queryFields.type';
 import { IPagination } from '../../../common/types/pagination';
 import { IUserView } from '../types/user.view.interface';
 import { UserInputDto } from './input-dto/users.input.dto';
-import { GetAllUsersQuery } from '../application/usecases/get.all.users.usecase';
-import { CreateUserCommand } from '../application/usecases/create-user.usecase';
-import { DeleteUserCommand } from '../application/usecases/delete-user.usecase'; // или CreateUserInputDto / UserInputDto — как у тебя
+import { GetAllUsersQuery } from '../application/usecases/users/get.all.users.usecase';
+import { CreateUserCommand } from '../application/usecases/users/create-user.usecase';
+import { DeleteUserCommand } from '../application/usecases/users/delete-user.usecase'; // или CreateUserInputDto / UserInputDto — как у тебя
 
 @NoRateLimit()
 @Controller('users')

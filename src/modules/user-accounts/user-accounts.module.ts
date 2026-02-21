@@ -18,9 +18,17 @@ import { RateLimiterInterceptor } from './adapters/request-logger-limiter.middle
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { BasicAuthGuard } from './api/guards/basic-auth.guard';
 import { CqrsModule } from '@nestjs/cqrs';
-import { CreateUserUseCase } from './application/usecases/create-user.usecase';
-import { DeleteUserUseCase } from './application/usecases/delete-user.usecase';
-import { GetAllUsersHandler } from './application/usecases/get.all.users.usecase';
+import { CreateUserUseCase } from './application/usecases/users/create-user.usecase';
+import { DeleteUserUseCase } from './application/usecases/users/delete-user.usecase';
+import { GetAllUsersHandler } from './application/usecases/users/get.all.users.usecase';
+import { LoginUserUseCase } from './application/usecases/auth/login-user.use-case';
+import { RegisterUserUseCase } from './application/usecases/auth/register-user.use-case';
+import { ConfirmEmailUseCase } from './application/usecases/auth/confirm-email.use-case';
+import { ResendConfirmationUseCase } from './application/usecases/auth/resend-confirmation.use-case';
+import { PasswordRecoveryUseCase } from './application/usecases/auth/password-recovery.use-case';
+import { ChangePasswordUseCase } from './application/usecases/auth/change-password.use-case';
+import { RefreshTokensUseCase } from './application/usecases/auth/refresh-tokens.use-case';
+import { GetMeHandler } from './application/usecases/auth/get-me.handler';
 // import { RequestLoggerAndLimiterMiddleware } from './adapters/request-logger-limiter.middleware';
 
 @Module({
@@ -56,6 +64,14 @@ import { GetAllUsersHandler } from './application/usecases/get.all.users.usecase
     // UpdateUserUseCase,
     GetAllUsersHandler,
     // RequestLoggerAndLimiterMiddleware,
+    LoginUserUseCase,
+    RegisterUserUseCase,
+    ConfirmEmailUseCase,
+    ResendConfirmationUseCase,
+    PasswordRecoveryUseCase,
+    ChangePasswordUseCase,
+    RefreshTokensUseCase,
+    GetMeHandler,
   ],
 })
 export class UserAccountsModule {}
