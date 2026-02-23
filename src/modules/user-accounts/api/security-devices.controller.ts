@@ -23,7 +23,8 @@ import { TerminateDeviceCommand } from '../application/usecases/security-devices
 import type { JwtUser } from '../../bloggers-platform/api/posts.controller';
 import { RefreshTokenGuard } from './guards/refresh-token.guard';
 import { NoRateLimit } from '../../../common/decorators/no-rate-limit.decorator';
-import { JwtAuthGuard } from './guards/jwt-auth.guard'; // или откуда у тебя JwtUser
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { CurrentDeviceId } from '../../../common/decorators/current-device-id.decorator'; // или откуда у тебя JwtUser
 
 // security-devices.controller.ts
 @NoRateLimit()
@@ -42,13 +43,14 @@ export class SecurityDevicesController {
   @UseGuards(RefreshTokenGuard)
   @Delete()
   @HttpCode(HttpStatus.NO_CONTENT)
-  async terminateAllExceptCurrent(@CurrentUser() user: JwtUser) {
-    if (!user.id) {
-      throw new UnauthorizedException('Device ID not found in token');
-    }
+  async terminateAllExceptCurrent(
+    @CurrentUser() user: JwtUser,
+    @CurrentDeviceId() deviceId: string,
+  ) {
     const result = await this.commandBus.execute(
-      new TerminateAllExceptCurrentCommand(user.id, user.id),
+      new TerminateAllExceptCurrentCommand(user.id, deviceId),
     );
+
     if (result.status !== ResultStatus.Success) {
       throw new ForbiddenException(result.extensions);
     }
