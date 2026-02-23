@@ -12,20 +12,30 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { PostService } from '../application/posts.service';
+import { CommandBus, QueryBus } from '@nestjs/cqrs';
+
 import { PostInputModel } from '../dto/input-dto/post.input';
 import { LikeStatusInputModel } from '../dto/input-dto/like-status.input';
-// import { CommentInputModel } from '../dto/input-dto/comment.input';
-import { mapPostToView } from './middlewares/posts.mapper';
+import { CommentInputModel } from '../dto/input-dto/comment.input';
+import type { CommentsQueryFieldsType } from '../types/comments.queryFields.type';
+import { IPagination } from '../../../common/types/pagination';
+import { CommentViewModel } from '../dto/comments.dto';
+
 import { NoRateLimit } from '../../../common/decorators/no-rate-limit.decorator';
 import { BasicAuthGuard } from '../../user-accounts/api/guards/basic-auth.guard';
 import { JwtAuthGuard } from '../../user-accounts/api/guards/jwt-auth.guard';
 import { OptionalJwtAuthGuard } from '../../user-accounts/api/guards/optional-jwt-auth.guard';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
-import type { CommentsQueryFieldsType } from '../types/comments.queryFields.type';
-import { IPagination } from '../../../common/types/pagination';
-import { CommentViewModel } from '../dto/comments.dto';
-import { CommentInputModel } from '../dto/input-dto/comment.input';
+
+import { mapPostToView } from './middlewares/posts.mapper';
+import { GetAllPostsQuery } from '../application/usecases/posts/get-all-posts.handler';
+import { CreatePostCommand } from '../application/usecases/posts/create-post.handler';
+import { GetPostByIdQuery } from '../application/usecases/posts/get-post-by-id.handler';
+import { UpdatePostCommand } from '../application/usecases/posts/update-post.handler';
+import { DeletePostCommand } from '../application/usecases/posts/delete-post.handler';
+import { GetCommentsByPostIdQuery } from '../application/usecases/posts/get-comments-by-post-id.handler';
+import { CreateCommentForPostCommand } from '../application/usecases/posts/create-comment-for-post.handler';
+import { UpdateLikeStatusCommand } from '../application/usecases/posts/update-like-status.handler';
 
 export interface JwtUser {
   id: string;
@@ -35,7 +45,10 @@ export interface JwtUser {
 @NoRateLimit()
 @Controller('posts')
 export class PostController {
-  constructor(private readonly postService: PostService) {}
+  constructor(
+    private readonly commandBus: CommandBus,
+    private readonly queryBus: QueryBus,
+  ) {}
 
   @UseGuards(OptionalJwtAuthGuard)
   @Get()
@@ -43,17 +56,16 @@ export class PostController {
     @Query() query: any,
     @CurrentUser() currentUser?: JwtUser | null,
   ): Promise<IPagination<any>> {
-    console.log(currentUser);
-
     const userId = currentUser?.id ?? null;
-    return this.postService.getAllPosts(query, userId);
+
+    return this.queryBus.execute(new GetAllPostsQuery(query, userId));
   }
 
   @UseGuards(BasicAuthGuard)
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async createPost(@Body() dto: PostInputModel) {
-    const created = await this.postService.createPost(dto);
+    const created = await this.commandBus.execute(new CreatePostCommand(dto));
     return mapPostToView(created);
   }
 
@@ -64,10 +76,13 @@ export class PostController {
     @CurrentUser() currentUser?: JwtUser | null,
   ) {
     const userId = currentUser?.id ?? null;
-    const post = await this.postService.getPostById(id, userId);
+
+    const post = await this.queryBus.execute(new GetPostByIdQuery(id, userId));
+
     if (!post) {
       throw new NotFoundException({ message: 'Post not found', field: 'id' });
     }
+
     return mapPostToView(post);
   }
 
@@ -78,7 +93,10 @@ export class PostController {
     @Param('id') id: string,
     @Body() dto: PostInputModel,
   ): Promise<void> {
-    const updated = await this.postService.updatePost(id, dto);
+    const updated = await this.commandBus.execute(
+      new UpdatePostCommand(id, dto),
+    );
+
     if (!updated) {
       throw new NotFoundException({ message: 'Post not found', field: 'id' });
     }
@@ -88,7 +106,8 @@ export class PostController {
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deletePost(@Param('id') id: string): Promise<void> {
-    const deleted = await this.postService.deletePost(id);
+    const deleted = await this.commandBus.execute(new DeletePostCommand(id));
+
     if (!deleted) {
       throw new NotFoundException({ message: 'Post not found', field: 'id' });
     }
@@ -103,7 +122,11 @@ export class PostController {
   ): Promise<IPagination<CommentViewModel[]>> {
     const userId = currentUser?.id ?? null;
 
-    const post = await this.postService.getPostById(postId, null);
+    // Проверяем существование поста (можно через GetPostByIdQuery)
+    const post = await this.queryBus.execute(
+      new GetPostByIdQuery(postId, null), // null — без userId для проверки существования
+    );
+
     if (!post) {
       throw new NotFoundException({
         message: 'Post not found',
@@ -111,7 +134,9 @@ export class PostController {
       });
     }
 
-    return this.postService.getCommentsByPostId(postId, query, userId);
+    return this.queryBus.execute(
+      new GetCommentsByPostIdQuery(postId, query, userId),
+    );
   }
 
   @UseGuards(JwtAuthGuard)
@@ -122,12 +147,9 @@ export class PostController {
     @Body() commentDto: CommentInputModel,
     @CurrentUser() currentUser: JwtUser,
   ): Promise<CommentViewModel> {
-    const createdComment = await this.postService.createComment(
-      postId,
-      commentDto,
-      currentUser.id,
+    return this.commandBus.execute(
+      new CreateCommentForPostCommand(postId, commentDto, currentUser.id),
     );
-    return createdComment;
   }
 
   @UseGuards(JwtAuthGuard)
@@ -138,10 +160,8 @@ export class PostController {
     @Body() likeDto: LikeStatusInputModel,
     @CurrentUser() currentUser: JwtUser,
   ): Promise<void> {
-    await this.postService.updateLikeStatus(
-      postId,
-      currentUser.id,
-      likeDto.likeStatus,
+    await this.commandBus.execute(
+      new UpdateLikeStatusCommand(postId, currentUser.id, likeDto.likeStatus),
     );
   }
 }

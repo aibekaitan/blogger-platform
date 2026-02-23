@@ -1,12 +1,8 @@
-
-
-
 import { LikeStatus } from '../domain/like.entity';
 
 export class CommentInputModel {
   content: string;
 }
-
 
 export class CommentViewModel {
   id: string;
@@ -15,7 +11,6 @@ export class CommentViewModel {
   createdAt: string;
   likesInfo: LikesInfoViewModel;
 }
-
 
 export class LikesInfoViewModel {
   likesCount: number;
@@ -31,12 +26,10 @@ export interface CommentDB {
   createdAt: string;
 }
 
-
 export interface CommentatorInfo {
   userId: string;
   userLogin?: string;
 }
-
 
 export interface LoginSuccessViewModel {
   accessToken: string;

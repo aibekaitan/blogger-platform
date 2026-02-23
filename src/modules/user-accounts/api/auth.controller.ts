@@ -31,6 +31,9 @@ import { ResendConfirmationCommand } from '../application/usecases/auth/resend-c
 import { PasswordRecoveryCommand } from '../application/usecases/auth/password-recovery.use-case';
 import { ChangePasswordCommand } from '../application/usecases/auth/change-password.use-case';
 import { GetMeQuery } from '../application/usecases/auth/get-me.handler';
+import { RefreshTokenGuard } from './guards/refresh-token.guard';
+import { CurrentUser } from '../../../common/decorators/current-user.decorator';
+import { CurrentDeviceId } from '../../../common/decorators/current-device-id.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -62,21 +65,18 @@ export class AuthController {
 
     return { accessToken };
   }
-
   @Post('refresh-token')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(RefreshTokenGuard)
   async refreshToken(
-    @Req() req: Request,
+    @CurrentUser() user: { id: string },
+    @CurrentDeviceId() deviceId: string,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const refreshToken = req.cookies?.refreshToken;
-
-    if (!refreshToken) {
-      throw new UnauthorizedException('Refresh token not found');
-    }
-
     const { accessToken, refreshToken: newRefreshToken } =
-      await this.commandBus.execute(new RefreshTokensCommand(refreshToken));
+      await this.commandBus.execute(
+        new RefreshTokensCommand(user.id, deviceId),
+      );
 
     res.cookie('refreshToken', newRefreshToken, {
       httpOnly: true,

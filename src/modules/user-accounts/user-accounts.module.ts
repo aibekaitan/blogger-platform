@@ -11,7 +11,7 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { appConfig } from '../../common/config/config';
 import { JwtStrategy } from './strategies/jwt.service';
-import { AuthService } from './application/auth.service';
+// import { AuthService } from './application/auth.service';
 import { NodemailerService } from './adapters/nodemailer.service';
 import { RequestLog, RequestLogSchema } from './domain/request-log.schema';
 import { RateLimiterInterceptor } from './adapters/request-logger-limiter.middleware';
@@ -29,10 +29,18 @@ import { PasswordRecoveryUseCase } from './application/usecases/auth/password-re
 import { ChangePasswordUseCase } from './application/usecases/auth/change-password.use-case';
 import { RefreshTokensUseCase } from './application/usecases/auth/refresh-tokens.use-case';
 import { GetMeHandler } from './application/usecases/auth/get-me.handler';
+import { TerminateAllExceptCurrentHandler } from './application/usecases/security-devices/terminate-all-except-current.command';
+import { TerminateDeviceHandler } from './application/usecases/security-devices/terminate-device.command';
+import { GetAllDevicesHandler } from './application/usecases/security-devices/get-all-devices.query';
+import { DevicesRepository } from './infrastructure/security-devices/security-devices.repository';
+import { SecurityDevicesQueryRepository } from './infrastructure/security-devices/security-devices.query.repository';
+import { Device, DeviceSchema } from './domain/device.model';
+import { RefreshTokenGuard } from './api/guards/refresh-token.guard';
 // import { RequestLoggerAndLimiterMiddleware } from './adapters/request-logger-limiter.middleware';
 
 @Module({
   imports: [
+    MongooseModule.forFeature([{ name: Device.name, schema: DeviceSchema }]),
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
     MongooseModule.forFeature([
       { name: RequestLog.name, schema: RequestLogSchema },
@@ -46,7 +54,7 @@ import { GetMeHandler } from './application/usecases/auth/get-me.handler';
   ],
   controllers: [UsersController, AuthController, SecurityDevicesController],
   providers: [
-    AuthService,
+    // AuthService,
     UsersRepository,
     UsersQueryRepository,
     JwtStrategy,
@@ -55,6 +63,7 @@ import { GetMeHandler } from './application/usecases/auth/get-me.handler';
     BcryptService,
     NodemailerService,
     BasicAuthGuard,
+    RefreshTokenGuard,
     {
       provide: APP_INTERCEPTOR,
       useClass: RateLimiterInterceptor,
@@ -72,6 +81,16 @@ import { GetMeHandler } from './application/usecases/auth/get-me.handler';
     ChangePasswordUseCase,
     RefreshTokensUseCase,
     GetMeHandler,
+
+    // Queries
+    GetAllDevicesHandler,
+    TerminateAllExceptCurrentHandler,
+    TerminateDeviceHandler,
+    // Commands
+
+    DevicesRepository,
+    SecurityDevicesQueryRepository,
+
   ],
 })
 export class UserAccountsModule {}

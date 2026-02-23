@@ -14,47 +14,56 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { BlogsService } from '../application/blogs.service';
-import { BlogInputModel } from '../dto/input-dto/blog.input';
-// import { BlogViewModel } from './types/blog.view';
+import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+
+import { BlogInputModel } from '../dto/input-dto/blog.input';
+import { CreatePostForBlogInputModel } from '../dto/input-dto/create-post-for-blog.input';
 import { BaseQueryParams } from '../../../core/dto/base.query-params.input-dto';
-import { mapBlogToView } from './middlewares/blog.mapper';
-import { mapPostToView } from './middlewares/posts.mapper';
+
 import { NoRateLimit } from '../../../common/decorators/no-rate-limit.decorator';
-// import { JwtAuthGuard } from '../../user-accounts/api/guards/jwt-auth.guard';
 import { BasicAuthGuard } from '../../user-accounts/api/guards/basic-auth.guard';
 import { OptionalJwtAuthGuard } from '../../user-accounts/api/guards/optional-jwt-auth.guard';
-import { CreatePostForBlogInputModel } from '../dto/input-dto/create-post-for-blog.input';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { JwtUser } from './posts.controller';
+
+import { mapBlogToView } from './middlewares/blog.mapper';
+import { mapPostToView } from './middlewares/posts.mapper';
+import { GetAllBlogsQuery } from '../application/usecases/blogs/get-all-blogs.handler';
+import { GetPostsByBlogIdQuery } from '../application/usecases/blogs/get-posts-by-blog-id.handler';
+import { GetBlogByIdQuery } from '../application/usecases/blogs/get-blog-by-id.handler';
+import { CreateBlogCommand } from '../application/usecases/blogs/create-blog.handler';
+import { CreatePostForBlogCommand } from '../application/usecases/blogs/create-post-for-blog.handler';
+import { UpdateBlogCommand } from '../application/usecases/blogs/update-blog.handler';
+import { DeleteBlogCommand } from '../application/usecases/blogs/delete-blog.handler';
+
 @NoRateLimit()
 @ApiTags('Blogs')
 @Controller('blogs')
 export class BlogsController {
-  constructor(private readonly blogsService: BlogsService) {}
+  constructor(
+    private readonly commandBus: CommandBus,
+    private readonly queryBus: QueryBus,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'Get all blogs with pagination' })
   @ApiResponse({ status: 200, description: 'Blogs returned' })
   async getAllBlogs(@Query() queryParams: BaseQueryParams) {
-    const { pageNumber, pageSize, sortBy, sortDirection } = queryParams;
+    const { pageNumber, pageSize, sortBy, sortDirection, searchNameTerm } =
+      queryParams;
 
-    const skip = queryParams.calculateSkip();
-    const sort = queryParams.getSortObject();
-
-    const searchNameTerm = queryParams.searchNameTerm || null;
-
-    const result = await this.blogsService.findAllBlogs({
-      pageNumber,
-      pageSize,
-      sortBy,
-      sortDirection,
-      searchNameTerm,
-    });
-
-    return result; // { pagesCount, page, pageSize, totalCount, items }
+    return this.queryBus.execute(
+      new GetAllBlogsQuery(
+        pageNumber,
+        pageSize,
+        sortBy,
+        sortDirection,
+        searchNameTerm || null,
+      ),
+    );
   }
+
   @UseGuards(OptionalJwtAuthGuard)
   @Get(':id/posts')
   @ApiOperation({ summary: 'Get posts for specific blog' })
@@ -63,19 +72,15 @@ export class BlogsController {
     @Query() queryParams: BaseQueryParams,
     @CurrentUser() currentUser?: JwtUser | null,
   ) {
-    const blog = await this.blogsService.findById(blogId);
     const userId = currentUser?.id ?? null;
-    console.log(userId);
-    if (!blog) {
-      throw new NotFoundException('Blog not found');
-    }
-    const result = await this.blogsService.findPostsByBlogId(
-      blogId,
-      queryParams,
-      userId,
+
+    // Можно сначала проверить существование блога через GetBlogByIdQuery
+    // Но для оптимизации — просто выполняем запрос постов
+    const result = await this.queryBus.execute(
+      new GetPostsByBlogIdQuery(blogId, queryParams, userId),
     );
 
-    if (result.items.length === 0) {
+    if (!result || result.items.length === 0) {
       throw new NotFoundException('Blog not found');
     }
 
@@ -85,12 +90,10 @@ export class BlogsController {
   @Get(':id')
   @ApiOperation({ summary: 'Get blog by id' })
   async getBlogById(@Param('id') id: string) {
-    const blog = await this.blogsService.findById(id);
+    const blog = await this.queryBus.execute(new GetBlogByIdQuery(id));
 
-    if (!blog) {
-      throw new NotFoundException('Blog not found');
-    }
-
+    // mapBlogToView можно оставить здесь, если он нужен только для ответа
+    // Или перенести маппинг в handler (рекомендуется для чистоты)
     return mapBlogToView(blog);
   }
 
@@ -99,7 +102,7 @@ export class BlogsController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create new blog' })
   async createBlog(@Body() createBlogDto: BlogInputModel) {
-    return await this.blogsService.create(createBlogDto);
+    return this.commandBus.execute(new CreateBlogCommand(createBlogDto));
   }
 
   @UseGuards(BasicAuthGuard)
@@ -110,20 +113,12 @@ export class BlogsController {
     @Param('blogId') blogId: string,
     @Body() createPostDto: CreatePostForBlogInputModel,
   ) {
-    const blog = await this.blogsService.findById(blogId);
-
-    if (!blog) {
-      throw new NotFoundException('Blog not found');
-    }
-    const newPost = mapPostToView(
-      await this.blogsService.createByBlogId(blogId, createPostDto),
+    const newPost = await this.commandBus.execute(
+      new CreatePostForBlogCommand(blogId, createPostDto),
     );
 
-    if (!newPost) {
-      throw new NotFoundException('Blog not found');
-    }
-
-    return newPost;
+    // Если handler возвращает сырой пост → маппим здесь
+    return mapPostToView(newPost);
   }
 
   @UseGuards(BasicAuthGuard)
@@ -134,13 +129,16 @@ export class BlogsController {
     @Param('id') id: string,
     @Body() updateBlogDto: BlogInputModel,
   ) {
-    const updated = await this.blogsService.update(id, updateBlogDto);
+    const updated = await this.commandBus.execute(
+      new UpdateBlogCommand(id, updateBlogDto),
+    );
 
     if (!updated) {
       throw new NotFoundException('Blog not found');
     }
 
-    return; // 204 No Content
+    // 204 No Content
+    return;
   }
 
   @UseGuards(BasicAuthGuard)
@@ -148,12 +146,13 @@ export class BlogsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete blog by id' })
   async deleteBlog(@Param('id') id: string) {
-    const deleted = await this.blogsService.delete(id);
+    const deleted = await this.commandBus.execute(new DeleteBlogCommand(id));
 
     if (!deleted) {
       throw new NotFoundException('Blog not found');
     }
 
-    return; // 204 No Content
+    // 204 No Content
+    return;
   }
 }

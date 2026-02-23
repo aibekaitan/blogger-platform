@@ -6,37 +6,54 @@ import {
   Put,
   Body,
   HttpCode,
-  Req,
   NotFoundException,
   UseGuards,
 } from '@nestjs/common';
-// import { CommentService } from '../domain/comments.service';
 import type { Request } from 'express';
+import { CommandBus, QueryBus } from '@nestjs/cqrs';
+
 import { CommentViewModel } from '../dto/comments.dto';
-import { CommentService } from '../application/comments.service';
+import { CommentInputModel } from '../dto/input-dto/comment.input';
+import { LikeStatusInputModel } from '../dto/input-dto/like-status.input';
+
 import { NoRateLimit } from '../../../common/decorators/no-rate-limit.decorator';
 import { JwtAuthGuard } from '../../user-accounts/api/guards/jwt-auth.guard';
-import { LikeStatusInputModel } from '../dto/input-dto/like-status.input';
-import { CommentInputModel } from '../dto/input-dto/comment.input';
-import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { OptionalJwtAuthGuard } from '../../user-accounts/api/guards/optional-jwt-auth.guard';
+import { CurrentUser } from '../../../common/decorators/current-user.decorator';
+import { GetCommentByIdQuery } from '../application/usecases/comments/get-comment-by-id.handler';
+import { DeleteCommentCommand } from '../application/usecases/comments/delete-comment.handler';
+import { UpdateCommentCommand } from '../application/usecases/comments/update-comment.handler';
+import { SetLikeStatusCommand } from '../application/usecases/comments/set-like-status.handler';
+
+// Импортируем команды и запросы (пути подкорректируй под свою структуру)
+
 @NoRateLimit()
 @Controller('comments')
 export class CommentsController {
-  constructor(private readonly commentService: CommentService) {}
+  constructor(
+    private readonly commandBus: CommandBus,
+    private readonly queryBus: QueryBus,
+  ) {}
+
   @UseGuards(OptionalJwtAuthGuard)
   @Get(':id')
   async getCommentById(
     @Param('id') id: string,
-    @Req() req,
+    @CurrentUser() currentUser?: { id: string } | null,
   ): Promise<CommentViewModel> {
-    const currentUserId = req.user?.id; // TODO: if authorization added
-    const comment = await this.commentService.getCommentById(id, currentUserId);
+    const currentUserId = currentUser?.id ?? undefined;
+
+    const comment = await this.queryBus.execute(
+      new GetCommentByIdQuery(id, currentUserId),
+    );
+
     if (!comment) {
       throw new NotFoundException('Comment not found');
     }
+
     return comment;
   }
+
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
   @HttpCode(204)
@@ -44,15 +61,9 @@ export class CommentsController {
     @Param('id') id: string,
     @CurrentUser() currentUser: { id: string },
   ): Promise<void> {
-    const comment = await this.commentService.getCommentById(
-      id,
-      currentUser.id,
-    );
-    if (!comment) {
-      throw new NotFoundException('Comment not found');
-    }
-    await this.commentService.delete(id, currentUser.id);
+    await this.commandBus.execute(new DeleteCommentCommand(id, currentUser.id));
   }
+
   @UseGuards(JwtAuthGuard)
   @Put(':id')
   @HttpCode(204)
@@ -61,17 +72,21 @@ export class CommentsController {
     @Body() dto: CommentInputModel,
     @CurrentUser() currentUser: { id: string; login: string },
   ): Promise<void> {
-    await this.commentService.update(id, dto, currentUser.id);
+    await this.commandBus.execute(
+      new UpdateCommentCommand(id, dto, currentUser.id),
+    );
   }
+
   @UseGuards(JwtAuthGuard)
   @Put(':id/like-status')
   @HttpCode(204)
   async setLikeStatus(
     @Param('id') id: string,
-    @Req() req,
+    @CurrentUser() currentUser: { id: string },
     @Body() dto: LikeStatusInputModel,
   ): Promise<void> {
-    const userId = req.user!.id;
-    await this.commentService.setLikeStatus(id, userId, dto.likeStatus);
+    await this.commandBus.execute(
+      new SetLikeStatusCommand(id, currentUser.id, dto.likeStatus),
+    );
   }
 }
