@@ -48,9 +48,9 @@ export class RefreshTokenGuard extends AuthGuard('jwt') {
 
     // 3. Проверяем устройство в БД
     const device = await this.devicesRepo.findByDeviceId(payload.deviceId);
-    // if (!device) {
-    //   throw new UnauthorizedException('Session not found — device invalid');
-    // }
+    if (!device) {
+      throw new UnauthorizedException('Session not found — device invalid');
+    }
 
     if (device.userId !== payload.userId) {
       throw new UnauthorizedException('Device belongs to another user');
