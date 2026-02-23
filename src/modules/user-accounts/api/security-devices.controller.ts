@@ -22,23 +22,24 @@ import { TerminateDeviceCommand } from '../application/usecases/security-devices
 // import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import type { JwtUser } from '../../bloggers-platform/api/posts.controller';
 import { RefreshTokenGuard } from './guards/refresh-token.guard';
-import { NoRateLimit } from '../../../common/decorators/no-rate-limit.decorator'; // или откуда у тебя JwtUser
+import { NoRateLimit } from '../../../common/decorators/no-rate-limit.decorator';
+import { JwtAuthGuard } from './guards/jwt-auth.guard'; // или откуда у тебя JwtUser
 
 // security-devices.controller.ts
 @NoRateLimit()
-@UseGuards(RefreshTokenGuard)
+
 @Controller('security/devices')
 export class SecurityDevicesController {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
   ) {}
-
+  @UseGuards(JwtAuthGuard)
   @Get()
   async getAllDevices(@CurrentUser() user: JwtUser) {
     return this.queryBus.execute(new GetAllDevicesQuery(user.id));
   }
-
+  @UseGuards(RefreshTokenGuard)
   @Delete()
   @HttpCode(HttpStatus.NO_CONTENT)
   async terminateAllExceptCurrent(@CurrentUser() user: JwtUser) {
@@ -52,7 +53,7 @@ export class SecurityDevicesController {
       throw new ForbiddenException(result.extensions);
     }
   }
-
+  @UseGuards(RefreshTokenGuard)
   @Delete(':deviceId')
   @HttpCode(HttpStatus.NO_CONTENT)
   async terminateDeviceById(
