@@ -34,7 +34,7 @@ export class SecurityDevicesController {
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
   ) {}
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(RefreshTokenGuard)
   @Get()
   async getAllDevices(@CurrentUser() user: JwtUser) {
     return this.queryBus.execute(new GetAllDevicesQuery(user.id));
