@@ -34,15 +34,18 @@ import { GetMeQuery } from '../application/usecases/auth/get-me.handler';
 import { RefreshTokenGuard } from './guards/refresh-token.guard';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { CurrentDeviceId } from '../../../common/decorators/current-device-id.decorator';
+import { LogoutCommand } from '../application/usecases/auth/logout-user.use-case';
+import { JwtService } from '@nestjs/jwt';
+import { appConfig } from '../../../common/config/config';
 
 @Controller('auth')
 export class AuthController {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
+    private readonly jwtService: JwtService,
   ) {}
 
-  @NoRateLimit()
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(
@@ -65,6 +68,7 @@ export class AuthController {
 
     return { accessToken };
   }
+  @NoRateLimit()
   @Post('refresh-token')
   @HttpCode(HttpStatus.OK)
   @UseGuards(RefreshTokenGuard)
@@ -132,18 +136,61 @@ export class AuthController {
       new ChangePasswordCommand(dto.recoveryCode, dto.newPassword),
     );
   }
-
+  // в auth.controller.ts или где удобно
+  // @Get('debug-token')
+  // @NoRateLimit() // или без guards вообще
+  // async debug(@Headers('authorization') authHeader: string) {
+  //   console.log('Полученный header:', authHeader);
+  //
+  //   if (!authHeader?.startsWith('Bearer ')) {
+  //     return { error: 'Нет Bearer токена в заголовке' };
+  //   }
+  //
+  //   const token = authHeader.split(' ')[1];
+  //   console.log('Токен:', token);
+  //
+  //   try {
+  //     const payload = await this.jwtService.verify(token, {
+  //       secret: appConfig.AC_SECRET,
+  //     });
+  //     return {
+  //       valid: true,
+  //       payload,
+  //       header: authHeader,
+  //     };
+  //   } catch (e) {
+  //     return {
+  //       valid: false,
+  //       error: e.message,
+  //       name: e.name,
+  //       token,
+  //     };
+  //   }
+  // }
   @NoRateLimit()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard) // ← именно этот guard!
   @Get('me')
   @HttpCode(HttpStatus.OK)
-  async getMe(@Req() req: Request) {
-    const userId = req.user.userId; // из JwtAuthGuard
+  async getMe(@CurrentUser() user: { id: string; login: string }) {
+    return this.queryBus.execute(new GetMeQuery(user.id));
+  }
+  @Post('logout')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(RefreshTokenGuard) // тот же guard, что и для /refresh-token
+  async logout(
+    @CurrentDeviceId() deviceId: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    // Выполняем команду удаления сессии
+    await this.commandBus.execute(new LogoutCommand(deviceId));
 
-    if (!userId) {
-      throw new UnauthorizedException('User ID not found in token');
-    }
+    // Удаляем refreshToken cookie
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+    });
 
-    return this.queryBus.execute(new GetMeQuery(userId));
+    // 204 No Content — успешный выход
   }
 }

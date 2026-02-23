@@ -19,11 +19,14 @@ import { ResultStatus } from '../../../common/result/resultCode';
 import { GetAllDevicesQuery } from '../application/usecases/security-devices/get-all-devices.query';
 import { TerminateAllExceptCurrentCommand } from '../application/usecases/security-devices/terminate-all-except-current.command';
 import { TerminateDeviceCommand } from '../application/usecases/security-devices/terminate-device.command';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import type { JwtUser } from '../../bloggers-platform/api/posts.controller'; // или откуда у тебя JwtUser
+// import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import type { JwtUser } from '../../bloggers-platform/api/posts.controller';
+import { RefreshTokenGuard } from './guards/refresh-token.guard';
+import { NoRateLimit } from '../../../common/decorators/no-rate-limit.decorator'; // или откуда у тебя JwtUser
 
 // security-devices.controller.ts
-@UseGuards(JwtAuthGuard)
+@NoRateLimit()
+@UseGuards(RefreshTokenGuard)
 @Controller('security/devices')
 export class SecurityDevicesController {
   constructor(

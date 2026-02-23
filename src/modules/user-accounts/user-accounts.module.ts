@@ -36,6 +36,7 @@ import { DevicesRepository } from './infrastructure/security-devices/security-de
 import { SecurityDevicesQueryRepository } from './infrastructure/security-devices/security-devices.query.repository';
 import { Device, DeviceSchema } from './domain/device.model';
 import { RefreshTokenGuard } from './api/guards/refresh-token.guard';
+import { LogoutUseCase } from './application/usecases/auth/logout-user.use-case';
 // import { RequestLoggerAndLimiterMiddleware } from './adapters/request-logger-limiter.middleware';
 
 @Module({
@@ -68,6 +69,7 @@ import { RefreshTokenGuard } from './api/guards/refresh-token.guard';
       provide: APP_INTERCEPTOR,
       useClass: RateLimiterInterceptor,
     },
+
     CreateUserUseCase,
     DeleteUserUseCase,
     // UpdateUserUseCase,
@@ -81,6 +83,8 @@ import { RefreshTokenGuard } from './api/guards/refresh-token.guard';
     ChangePasswordUseCase,
     RefreshTokensUseCase,
     GetMeHandler,
+    LogoutUseCase,
+
 
     // Queries
     GetAllDevicesHandler,
@@ -90,7 +94,6 @@ import { RefreshTokenGuard } from './api/guards/refresh-token.guard';
 
     DevicesRepository,
     SecurityDevicesQueryRepository,
-
   ],
 })
 export class UserAccountsModule {}
