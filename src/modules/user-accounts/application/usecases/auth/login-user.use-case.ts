@@ -55,16 +55,16 @@ export class LoginUserUseCase implements ICommandHandler<
       secret: this.configService.getOrThrow('AC_SECRET'),
       expiresIn: this.configService.getOrThrow('AC_TIME'),
     });
-    // генерируем уникальный deviceId (uuid или просто строка)
-    const deviceId = crypto.randomUUID(); // или import { v4 as uuidv4 } from 'uuid';
 
-    // для refresh токена добавляем deviceId
+    const deviceId = crypto.randomUUID();
+
+
     const refreshPayload = { userId, login, deviceId };
 
     const refreshToken = this.jwtService.sign(refreshPayload, {
       secret: this.configService.getOrThrow('RT_SECRET'),
       // expiresIn: '259200033',
-      expiresIn: this.configService.getOrThrow('RT_TIME'), // убедись, что это '30d' или '2592000s'
+      expiresIn: this.configService.getOrThrow('RT_TIME'),
     });
 
     await this.devicesRepository.upsertDevice({
@@ -73,7 +73,7 @@ export class LoginUserUseCase implements ICommandHandler<
       ip: command.ip,
       title: command.title,
       lastActiveDate: new Date(),
-      refreshToken, // храни сам токен (или его hash)
+      refreshToken,
       expirationDate: new Date(Date.now() + 2592000),
     });
 

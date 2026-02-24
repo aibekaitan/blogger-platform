@@ -21,5 +21,4 @@ export class RequestLog extends Document {
 
 export const RequestLogSchema = SchemaFactory.createForClass(RequestLog);
 
-// Добавляем индекс для быстрого поиска по ip + url + date (важно для countDocuments)
 RequestLogSchema.index({ ip: 1, url: 1, date: 1 });

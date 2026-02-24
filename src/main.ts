@@ -45,10 +45,10 @@ async function bootstrap() {
       },
     }),
   );
-  appSetup(app); //глобальные настройки приложения
+  appSetup(app);
   // const loggerMiddleware = app.get(RequestLoggerAndLimiterMiddleware);
   //
-  // // Подключаем как функцию
+  //
   // app.use(loggerMiddleware.use.bind(loggerMiddleware));
   app.use(cookieParser());
   const PORT = process.env.PORT || 5005; //TODO: move to configService. will be in the following lessons

@@ -26,7 +26,7 @@ export class PasswordRecoveryUseCase implements ICommandHandler<
 
     const user = await this.usersRepository.findByLoginOrEmail(email);
     if (!user) {
-      return; // silently ignore — как в твоём оригинальном коде
+      return;
     }
 
     const recoveryCode = randomUUID();

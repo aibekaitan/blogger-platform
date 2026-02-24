@@ -1,7 +1,6 @@
-// application/handlers/get-all-devices.handler.ts
+
 import { QueryHandler, IQueryHandler } from '@nestjs/cqrs';
 
-// application/queries/get-all-devices.query.ts
 import { Query } from '@nestjs/cqrs';
 import { DeviceViewModel } from '../../../domain/dto/view-dto';
 import { SecurityDevicesQueryRepository } from '../../../infrastructure/security-devices/security-devices.query.repository';

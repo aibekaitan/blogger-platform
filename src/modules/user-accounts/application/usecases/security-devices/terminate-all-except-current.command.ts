@@ -1,7 +1,6 @@
-// application/commands/terminate-all-except-current.command.ts
+
 import { Command } from '@nestjs/cqrs';
 
-// application/handlers/terminate-all-except-current.handler.ts
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { DevicesRepository } from '../../../infrastructure/security-devices/security-devices.repository';
 import { ResultStatus } from '../../../../../common/result/resultCode';

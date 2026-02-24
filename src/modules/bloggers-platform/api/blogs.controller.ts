@@ -74,8 +74,6 @@ export class BlogsController {
   ) {
     const userId = currentUser?.id ?? null;
 
-    // Можно сначала проверить существование блога через GetBlogByIdQuery
-    // Но для оптимизации — просто выполняем запрос постов
     const result = await this.queryBus.execute(
       new GetPostsByBlogIdQuery(blogId, queryParams, userId),
     );
@@ -92,8 +90,6 @@ export class BlogsController {
   async getBlogById(@Param('id') id: string) {
     const blog = await this.queryBus.execute(new GetBlogByIdQuery(id));
 
-    // mapBlogToView можно оставить здесь, если он нужен только для ответа
-    // Или перенести маппинг в handler (рекомендуется для чистоты)
     return mapBlogToView(blog);
   }
 
@@ -116,8 +112,6 @@ export class BlogsController {
     const newPost = await this.commandBus.execute(
       new CreatePostForBlogCommand(blogId, createPostDto),
     );
-
-    // Если handler возвращает сырой пост → маппим здесь
     return mapPostToView(newPost);
   }
 

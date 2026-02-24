@@ -102,7 +102,7 @@ export class AuthController {
       ),
     );
 
-    // 204 No Content — регистрация прошла успешно
+    // 204 No Content
   }
 
   @Post('registration-confirmation')
@@ -140,7 +140,7 @@ export class AuthController {
   // @Get('debug-token')
   // @NoRateLimit() // или без guards вообще
   // async debug(@Headers('authorization') authHeader: string) {
-  //   console.log('Полученный header:', authHeader);
+  //
   //
   //   if (!authHeader?.startsWith('Bearer ')) {
   //     return { error: 'Нет Bearer токена в заголовке' };
@@ -176,21 +176,19 @@ export class AuthController {
   }
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @UseGuards(RefreshTokenGuard) // тот же guard, что и для /refresh-token
+  @UseGuards(RefreshTokenGuard)
   async logout(
     @CurrentDeviceId() deviceId: string,
     @Res({ passthrough: true }) res: Response,
   ) {
-    // Выполняем команду удаления сессии
     await this.commandBus.execute(new LogoutCommand(deviceId));
 
-    // Удаляем refreshToken cookie
     res.clearCookie('refreshToken', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
     });
 
-    // 204 No Content — успешный выход
+    // 204 No Content
   }
 }

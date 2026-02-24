@@ -6,7 +6,6 @@ import { CreatePostForBlogInputModel } from '../../../dto/input-dto/create-post-
 import { BlogsRepository } from '../../../infrastructure/blogs.repository';
 
 export class CreatePostForBlogCommand extends Command<any> {
-  // тип поста
   constructor(
     public readonly blogId: string,
     public readonly dto: CreatePostForBlogInputModel,

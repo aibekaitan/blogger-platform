@@ -122,9 +122,8 @@ export class PostController {
   ): Promise<IPagination<CommentViewModel[]>> {
     const userId = currentUser?.id ?? null;
 
-    // Проверяем существование поста (можно через GetPostByIdQuery)
     const post = await this.queryBus.execute(
-      new GetPostByIdQuery(postId, null), // null — без userId для проверки существования
+      new GetPostByIdQuery(postId, null),
     );
 
     if (!post) {

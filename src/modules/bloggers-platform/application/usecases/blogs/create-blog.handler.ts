@@ -10,7 +10,6 @@ import { BlogInputModel } from '../../../dto/input-dto/blog.input';
 import { mapBlogToView } from '../../../api/middlewares/blog.mapper';
 
 export class CreateBlogCommand extends Command<any> {
-  // или конкретный ViewModel
   constructor(public readonly dto: BlogInputModel) {
     super();
   }
@@ -33,6 +32,6 @@ export class CreateBlogHandler implements ICommandHandler<CreateBlogCommand> {
     };
 
     const created = await this.blogsRepository.create(blog);
-    return mapBlogToView(created); // или просто created, если mapper не обязателен
+    return mapBlogToView(created);
   }
 }

@@ -23,7 +23,7 @@ import { IUserView } from '../types/user.view.interface';
 import { UserInputDto } from './input-dto/users.input.dto';
 import { GetAllUsersQuery } from '../application/usecases/users/get.all.users.usecase';
 import { CreateUserCommand } from '../application/usecases/users/create-user.usecase';
-import { DeleteUserCommand } from '../application/usecases/users/delete-user.usecase'; // или CreateUserInputDto / UserInputDto — как у тебя
+import { DeleteUserCommand } from '../application/usecases/users/delete-user.usecase';
 
 @NoRateLimit()
 @Controller('users')
@@ -44,7 +44,6 @@ export class UsersController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async createUser(@Body() dto: UserInputDto): Promise<IUserView> {
-    // Отправляем команду → use-case возвращает IUserView целиком
     return this.commandBus.execute<IUserView>(new CreateUserCommand(dto));
   }
 

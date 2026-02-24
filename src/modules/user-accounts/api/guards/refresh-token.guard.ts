@@ -46,7 +46,6 @@ export class RefreshTokenGuard extends AuthGuard('jwt') {
       throw new UnauthorizedException('Invalid refresh token payload');
     }
 
-    // 3. Проверяем устройство в БД
     const device = await this.devicesRepo.findByDeviceId(payload.deviceId);
     if (!device) {
       throw new UnauthorizedException('Session not found — device invalid');
@@ -66,7 +65,6 @@ export class RefreshTokenGuard extends AuthGuard('jwt') {
     //   throw new UnauthorizedException('Session expired');
     // }
 
-    // 4. Всё ок — сохраняем user и deviceId в request
     request.user = { id: payload.userId };
     request.context = { deviceId: payload.deviceId };
 

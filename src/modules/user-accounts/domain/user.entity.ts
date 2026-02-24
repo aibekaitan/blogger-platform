@@ -1,4 +1,3 @@
-// src/user-accounts/domain/user.entity.ts
 import { randomUUID } from 'crypto';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Model, Types } from 'mongoose';

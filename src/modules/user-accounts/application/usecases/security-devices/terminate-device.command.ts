@@ -1,7 +1,4 @@
-// application/commands/terminate-device.command.ts
 import { Command } from '@nestjs/cqrs';
-
-// application/handlers/terminate-device.handler.ts
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { DevicesRepository } from '../../../infrastructure/security-devices/security-devices.repository';
 import { ServiceResult } from '../../../../../common/result/result.type';

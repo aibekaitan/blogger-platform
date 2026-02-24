@@ -24,7 +24,7 @@ import type { JwtUser } from '../../bloggers-platform/api/posts.controller';
 import { RefreshTokenGuard } from './guards/refresh-token.guard';
 import { NoRateLimit } from '../../../common/decorators/no-rate-limit.decorator';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { CurrentDeviceId } from '../../../common/decorators/current-device-id.decorator'; // или откуда у тебя JwtUser
+import { CurrentDeviceId } from '../../../common/decorators/current-device-id.decorator';
 
 // security-devices.controller.ts
 @NoRateLimit()

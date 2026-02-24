@@ -1,5 +1,3 @@
-// change-password.command.ts
-
 // change-password.use-case.ts
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { BadRequestException } from '@nestjs/common';
