@@ -26,7 +26,7 @@ import { CreateUserCommand } from '../application/usecases/users/create-user.use
 import { DeleteUserCommand } from '../application/usecases/users/delete-user.usecase';
 
 @NoRateLimit()
-@Controller('users')
+@Controller('/sa/users')
 @UseGuards(BasicAuthGuard)
 export class UsersController {
   constructor(
