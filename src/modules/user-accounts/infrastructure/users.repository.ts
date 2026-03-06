@@ -58,24 +58,27 @@ export class UsersRepository {
     email: string;
     passwordHash: string;
   }): Promise<string> {
-    const [result] = await this.dataSource.query(
-      `INSERT INTO users (login, email, "passwordHash", "createdAt", "emailConfirmation", "passwordRecoveryCode")
-       VALUES ($1, $2, $3, NOW(), 
-         '{"confirmationCode": $4, "expirationDate": $5, "isConfirmed": false}'::jsonb,
-         $6
-       )
-       RETURNING id`,
+    const emailConfirmation = {
+      confirmationCode: crypto.randomUUID(),
+      expirationDate: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+      isConfirmed: false,
+    };
+
+    const rows = await this.dataSource.query(
+      `INSERT INTO users
+    (login, email, "passwordHash", "createdat", "emailConfirmation", "passwordRecoveryCode")
+   VALUES ($1, $2, $3, NOW(), $4::jsonb, $5)
+   RETURNING id`,
       [
         userData.login.trim(),
         userData.email.trim().toLowerCase(),
         userData.passwordHash,
-        crypto.randomUUID(), // confirmationCode
-        new Date(Date.now() + 60 * 60 * 1000), // expiration +1h
-        crypto.randomUUID(), // passwordRecoveryCode
+        JSON.stringify(emailConfirmation),
+        crypto.randomUUID(),
       ],
     );
 
-    return result.id;
+    return rows[0].id;
   }
 
   async delete(id: string): Promise<boolean> {
