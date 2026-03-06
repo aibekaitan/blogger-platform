@@ -61,10 +61,10 @@ import { User } from './domain/user.entity';
   ],
   controllers: [UsersController, AuthController, SecurityDevicesController],
   providers: [
-    {
+    /*{
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
-    },
+    },*/
     // AuthService,
     UsersRepository,
     UsersQueryRepository,
