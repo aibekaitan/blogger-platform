@@ -1,56 +1,87 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { User } from '../domain/user.entity';
-// import { User } from '../domain/user.entity'; // ← оставляем entity для типизации (опционально)
 
 @Injectable()
 export class UsersRepository {
   constructor(private dataSource: DataSource) {}
 
-  // Пример: найти по login
   async findByLogin(login: string): Promise<User | null> {
-    const [rows] = await this.dataSource.query(
+    const rows = await this.dataSource.query(
       `SELECT * FROM users WHERE login = $1 LIMIT 1`,
       [login],
     );
 
-    if (!rows?.length) return null;
-    return rows[0] as User; // или маппинг, если нужно переименовать поля
+    return rows[0] ?? null;
   }
 
   async findByEmail(email: string): Promise<User | null> {
-    const [rows] = await this.dataSource.query(
+    const rows = await this.dataSource.query(
       `SELECT * FROM users WHERE email = $1 LIMIT 1`,
       [email],
     );
-    return rows?.[0] ?? null;
+
+    return rows[0] ?? null;
   }
 
   async findByLoginOrEmail(loginOrEmail: string): Promise<User | null> {
-    const [rows] = await this.dataSource.query(
+    const rows = await this.dataSource.query(
       `
         SELECT *
         FROM users
         WHERE LOWER(login) = LOWER($1)
            OR LOWER(email) = LOWER($1)
-          LIMIT 1
+        LIMIT 1
       `,
       [loginOrEmail.trim()],
     );
-    return rows?.[0] ?? null;
+
+    return rows[0] ?? null;
   }
 
   async doesExistByLoginOrEmail(
     login: string,
     email: string,
   ): Promise<boolean> {
-    const [rows] = await this.dataSource.query(
+    const rows = await this.dataSource.query(
       `SELECT 1 FROM users 
        WHERE login = $1 OR email = $2 
        LIMIT 1`,
       [login, email],
     );
-    return !!rows?.length;
+
+    return rows.length > 0;
+  }
+
+  async findUserByConfirmationCode(code: string): Promise<User | null> {
+    const rows = await this.dataSource.query(
+      `SELECT * FROM users 
+       WHERE "emailConfirmation"->>'confirmationCode' = $1 
+       LIMIT 1`,
+      [code],
+    );
+
+    return rows[0] ?? null;
+  }
+
+  async findUserByPasswordRecoveryCode(code: string): Promise<User | null> {
+    const rows = await this.dataSource.query(
+      `SELECT * FROM users
+       WHERE "passwordRecoveryCode" = $1
+           LIMIT 1`,
+      [code],
+    );
+
+    return rows[0] ?? null;
+  }
+
+  async findById(id: string): Promise<User | null> {
+    const rows = await this.dataSource.query(
+      `SELECT * FROM users WHERE id = $1 LIMIT 1`,
+      [id],
+    );
+
+    return rows[0] ?? null;
   }
 
   async create(userData: {
@@ -66,9 +97,9 @@ export class UsersRepository {
 
     const rows = await this.dataSource.query(
       `INSERT INTO users
-    (login, email, "passwordHash", "createdAt", "emailConfirmation", "passwordRecoveryCode")
-   VALUES ($1, $2, $3, NOW(), $4::jsonb, $5)
-   RETURNING id`,
+      (login, email, "passwordHash", "createdAt", "emailConfirmation", "passwordRecoveryCode")
+      VALUES ($1, $2, $3, NOW(), $4::jsonb, $5)
+      RETURNING id`,
       [
         userData.login.trim(),
         userData.email.trim().toLowerCase(),
@@ -82,19 +113,12 @@ export class UsersRepository {
   }
 
   async delete(id: string): Promise<boolean> {
-    const result = await this.dataSource.query(
-      `DELETE FROM users WHERE id = $1`,
+    const rows = await this.dataSource.query(
+      `DELETE FROM users WHERE id = $1 RETURNING id`,
       [id],
     );
-    return result[1] === 1; // rowCount
-  }
 
-  async findById(id: string): Promise<User | null> {
-    const [rows] = await this.dataSource.query(
-      `SELECT * FROM users WHERE id = $1 LIMIT 1`,
-      [id],
-    );
-    return rows?.[0] ?? null;
+    return rows.length > 0;
   }
 
   async updateRefreshToken(
@@ -109,7 +133,7 @@ export class UsersRepository {
 
   async confirmEmail(userId: string): Promise<void> {
     await this.dataSource.query(
-      `UPDATE users 
+      `UPDATE users
        SET "emailConfirmation" = jsonb_set("emailConfirmation", '{isConfirmed}', 'true'::jsonb)
        WHERE id = $1`,
       [userId],
@@ -138,25 +162,7 @@ export class UsersRepository {
       `UPDATE users 
        SET "emailConfirmation" = jsonb_set("emailConfirmation", '{confirmationCode}', $1::jsonb)
        WHERE id = $2`,
-      [newCode, userId],
+      [JSON.stringify(newCode), userId],
     );
-  }
-
-  async findUserByConfirmationCode(code: string): Promise<User | null> {
-    const [rows] = await this.dataSource.query(
-      `SELECT * FROM users 
-       WHERE "emailConfirmation"->>'confirmationCode' = $1 
-       LIMIT 1`,
-      [code],
-    );
-    return rows?.[0] ?? null;
-  }
-
-  async findUserByPasswordRecoveryCode(code: string): Promise<User | null> {
-    const [rows] = await this.dataSource.query(
-      `SELECT * FROM users WHERE "passwordRecoveryCode" = $1 LIMIT 1`,
-      [code],
-    );
-    return rows?.[0] ?? null;
   }
 }

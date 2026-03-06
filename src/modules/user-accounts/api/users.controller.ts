@@ -25,7 +25,7 @@ import { GetAllUsersQuery } from '../application/usecases/users/get.all.users.us
 import { CreateUserCommand } from '../application/usecases/users/create-user.usecase';
 import { DeleteUserCommand } from '../application/usecases/users/delete-user.usecase';
 import { SkipThrottle } from '@nestjs/throttler';
-
+import { validate as isUUID } from 'uuid';
 @SkipThrottle()
 @Controller('/sa/users')
 @UseGuards(BasicAuthGuard)
@@ -51,8 +51,8 @@ export class UsersController {
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteUser(@Param('id') id: string): Promise<void> {
-    if (!Types.ObjectId.isValid(id)) {
-      throw new NotFoundException('Invalid user id');
+    if (!isUUID(id)) {
+      throw new NotFoundException();
     }
 
     await this.commandBus.execute(new DeleteUserCommand(id));
