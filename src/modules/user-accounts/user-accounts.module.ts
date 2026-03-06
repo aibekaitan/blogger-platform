@@ -39,6 +39,7 @@ import { UsersRepository } from './infrastructure/users.repository';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Device } from './domain/device.model';
+import { User } from './domain/user.entity';
 // import { UsersRepository } from './infrastructure/users.repository.old';
 // import { User } from './domain/user.entity.old';
 // import { RequestLoggerAndLimiterMiddleware } from './adapters/request-logger-limiter.middleware';
@@ -50,7 +51,7 @@ import { Device } from './domain/device.model';
     // MongooseModule.forFeature([
     //   { name: RequestLog.name, schema: RequestLogSchema },
     // ]),
-    TypeOrmModule.forFeature([Device]),
+    TypeOrmModule.forFeature([Device, User]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({
       secret: appConfig.AC_SECRET,
