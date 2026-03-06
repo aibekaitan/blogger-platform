@@ -35,21 +35,22 @@ export class UsersQueryRepository {
     const params: any[] = [];
     let paramIndex = 1;
 
+    const conditions: string[] = [];
+
     if (searchLoginTerm) {
-      whereClause += ` AND login ILIKE $${paramIndex}`;
+      conditions.push(`login ILIKE $${paramIndex}`);
       params.push(`%${searchLoginTerm}%`);
       paramIndex++;
     }
 
     if (searchEmailTerm) {
-      whereClause += ` AND email ILIKE $${paramIndex}`;
+      conditions.push(`email ILIKE $${paramIndex}`);
       params.push(`%${searchEmailTerm}%`);
       paramIndex++;
     }
 
-    // Убираем первый "AND" если есть
-    if (whereClause.startsWith(' AND')) {
-      whereClause = 'WHERE' + whereClause.substring(4);
+    if (conditions.length) {
+      whereClause = `WHERE (${conditions.join(' OR ')})`;
     }
 
     // 1. Получаем общее количество (аналог countDocuments)
