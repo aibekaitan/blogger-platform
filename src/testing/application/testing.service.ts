@@ -1,43 +1,47 @@
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import {
-  Blog,
-  BlogDocument,
-} from '../../modules/bloggers-platform/domain/blog.entity';
-import {
-  Post,
-  PostDocument,
-} from '../../modules/bloggers-platform/domain/post.entity';
-import {
-  Comment,
-  CommentDocument,
-} from '../../modules/bloggers-platform/domain/comment.entity';
-import {
-  User,
-  UserDocument,
-} from '../../modules/user-accounts/domain/user.entity';
+import { DataSource } from 'typeorm';
 
 @Injectable()
 export class TestingService {
-  constructor(
-    @InjectModel(Blog.name) private blogModel: Model<BlogDocument>,
-    @InjectModel(Post.name) private postModel: Model<PostDocument>,
-    @InjectModel(Comment.name) private commentModel: Model<CommentDocument>,
-    @InjectModel(User.name) private userModel: Model<UserDocument>,
-    // @InjectModel(Like.name) private likeModel: Model<LikeDocument>,
-    // @InjectModel(RequestLog.name) private requestLogModel: Model<RequestLogDocument>,
-  ) {}
+  constructor(private readonly dataSource: DataSource) {}
 
   async deleteAllData(): Promise<void> {
-    await Promise.all([
-      this.blogModel.deleteMany({}).exec(),
-      this.postModel.deleteMany({}).exec(),
-      this.commentModel.deleteMany({}).exec(),
-      this.userModel.deleteMany({}).exec(),
-      // this.likeModel.deleteMany({}).exec(),
-      // this.requestLogModel.deleteMany({}).exec(),
-      // ... все остальные
-    ]);
+    // Для PostgreSQL / MySQL / SQLite
+    const queryRunner = this.dataSource.createQueryRunner();
+
+    try {
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
+
+      // Отключаем проверки внешних ключей (важно для CASCADE)
+      await queryRunner.query('SET CONSTRAINTS ALL DEFERRED'); // PostgreSQL
+      // или для MySQL: await queryRunner.query('SET FOREIGN_KEY_CHECKS = 0;');
+
+      // Список таблиц в правильном порядке (от зависимых → к независимым)
+      const tables = [
+        'comments', // зависит от posts и users
+        'posts', // зависит от blogs и users
+        'blogs', // зависит от users
+        'users', // независимая (или почти)
+        // 'likes',
+        // 'request_logs',
+        // ... добавляй остальные
+      ];
+
+      for (const table of tables) {
+        await queryRunner.query(`TRUNCATE TABLE "${table}" CASCADE;`);
+      }
+
+      // Включаем обратно (MySQL)
+      // await queryRunner.query('SET FOREIGN_KEY_CHECKS = 1;');
+
+      await queryRunner.commitTransaction();
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      console.error('Ошибка очистки базы:', err);
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
   }
 }

@@ -31,7 +31,7 @@ export class PasswordRecoveryUseCase implements ICommandHandler<
 
     const recoveryCode = randomUUID();
     await this.usersRepository.updatePasswordRecoveryCode(
-      user._id,
+      user.id,
       recoveryCode,
     );
 

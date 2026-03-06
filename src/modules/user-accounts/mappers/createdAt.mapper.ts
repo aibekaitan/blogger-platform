@@ -1,5 +1,5 @@
 // Пример маппера (рекомендую вынести в отдельный файл)
-import { UserDocument } from '../domain/user.entity';
+// import { UserDocument } from '../domain/user.entity';
 
 // export class UserViewModel {
 //   id: string;

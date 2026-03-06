@@ -24,8 +24,9 @@ import { UserInputDto } from './input-dto/users.input.dto';
 import { GetAllUsersQuery } from '../application/usecases/users/get.all.users.usecase';
 import { CreateUserCommand } from '../application/usecases/users/create-user.usecase';
 import { DeleteUserCommand } from '../application/usecases/users/delete-user.usecase';
+import { SkipThrottle } from '@nestjs/throttler';
 
-@NoRateLimit()
+@SkipThrottle()
 @Controller('/sa/users')
 @UseGuards(BasicAuthGuard)
 export class UsersController {

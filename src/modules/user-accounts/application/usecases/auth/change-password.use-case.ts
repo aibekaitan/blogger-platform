@@ -40,6 +40,6 @@ export class ChangePasswordUseCase implements ICommandHandler<
     }
 
     const passwordHash = await this.bcryptService.generateHash(newPassword);
-    await this.usersRepository.updatePassword(user._id, passwordHash);
+    await this.usersRepository.updatePassword(user.id, passwordHash);
   }
 }

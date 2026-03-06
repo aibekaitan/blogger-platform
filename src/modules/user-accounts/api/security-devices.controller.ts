@@ -25,10 +25,10 @@ import { RefreshTokenGuard } from './guards/refresh-token.guard';
 import { NoRateLimit } from '../../../common/decorators/no-rate-limit.decorator';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentDeviceId } from '../../../common/decorators/current-device-id.decorator';
+import { SkipThrottle } from '@nestjs/throttler';
 
 // security-devices.controller.ts
-@NoRateLimit()
-
+@SkipThrottle()
 @Controller('security/devices')
 export class SecurityDevicesController {
   constructor(

@@ -50,7 +50,7 @@ export class RegisterUserUseCase implements ICommandHandler<
     const expirationDate = new Date(Date.now() + 60 * 60 * 1000);
 
     const dto = { id: uuidv4(), login, email, passwordHash };
-    const newUser = User.createInstance(dto);
+    const newUser = User.create(dto);
     newUser.emailConfirmation = {
       confirmationCode,
       expirationDate,

@@ -34,6 +34,6 @@ export class ConfirmEmailUseCase implements ICommandHandler<
       });
     }
 
-    await this.usersRepository.updateConfirmation(user._id);
+    await this.usersRepository.confirmEmail(user.id);
   }
 }

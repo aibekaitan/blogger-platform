@@ -48,7 +48,7 @@ export class LoginUserUseCase implements ICommandHandler<
     );
     if (!valid) throw new UnauthorizedException('Invalid credentials');
 
-    const userId = user._id.toString();
+    const userId = user.id.toString();
     const login = user.login;
     const payload = { userId, login };
     const accessToken = this.jwtService.sign(payload, {

@@ -14,7 +14,7 @@ import {
   Comment,
   CommentSchema,
 } from '../modules/bloggers-platform/domain/comment.entity';
-import { User, UserSchema } from '../modules/user-accounts/domain/user.entity';
+// import { User, UserSchema } from '../modules/user-accounts/domain/user.entity';
 import {
   Like,
   LikeSchema,
@@ -23,13 +23,13 @@ import {
 
 @Module({
   imports: [
-    MongooseModule.forFeature([
-      { name: Blog.name, schema: BlogSchema },
-      { name: Post.name, schema: PostSchema },
-      { name: Comment.name, schema: CommentSchema },
-      { name: User.name, schema: UserSchema },
-      { name: Like.name, schema: LikeSchema },
-    ]),
+    // MongooseModule.forFeature([
+    //   { name: Blog.name, schema: BlogSchema },
+    //   { name: Post.name, schema: PostSchema },
+    //   { name: Comment.name, schema: CommentSchema },
+    //   { name: User.name, schema: UserSchema },
+    //   { name: Like.name, schema: LikeSchema },
+    // ]),
   ],
   controllers: [TestingController],
   providers: [TestingService],

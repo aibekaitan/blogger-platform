@@ -37,6 +37,7 @@ import { CurrentDeviceId } from '../../../common/decorators/current-device-id.de
 import { LogoutCommand } from '../application/usecases/auth/logout-user.use-case';
 import { JwtService } from '@nestjs/jwt';
 import { appConfig } from '../../../common/config/config';
+import { SkipThrottle, Throttle } from '@nestjs/throttler';
 
 @Controller('auth')
 export class AuthController {
@@ -68,7 +69,7 @@ export class AuthController {
 
     return { accessToken };
   }
-  @NoRateLimit()
+  @SkipThrottle()
   @Post('refresh-token')
   @HttpCode(HttpStatus.OK)
   @UseGuards(RefreshTokenGuard)
@@ -114,6 +115,7 @@ export class AuthController {
   }
 
   @Post('registration-email-resending')
+  @Throttle({ resend: { limit: 2, ttl: 60000 } })
   @HttpCode(HttpStatus.NO_CONTENT)
   async registrationEmailResending(
     @Body() emailDto: RegistrationResendingInputDto,
@@ -167,7 +169,7 @@ export class AuthController {
   //     };
   //   }
   // }
-  @NoRateLimit()
+  @SkipThrottle()
   @UseGuards(JwtAuthGuard) // ← именно этот guard!
   @Get('me')
   @HttpCode(HttpStatus.OK)

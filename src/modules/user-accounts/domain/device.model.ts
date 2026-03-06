@@ -1,47 +1,31 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
+import { Entity, Column, PrimaryGeneratedColumn, Index } from 'typeorm';
 
-export interface Device {
-  _id: Types.ObjectId;
-  userId: string;
-  deviceId: string;
-  ip: string;
-  title: string;
-  lastActiveDate: Date;
-  expirationDate: Date;
-  refreshToken: string;
-}
-
-export type DeviceDocument = Device & Document;
-
-@Schema({
-  versionKey: false,
-  timestamps: false,
-})
+@Entity('devices')
+@Index('idx_user_last_active_desc', ['userId', 'lastActiveDate']) // composite index
+@Index('idx_device_expiration', ['expirationDate'])
 export class Device {
-  @Prop({ type: String, required: true })
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column()
   userId: string;
 
-  @Prop({ type: String, required: true, unique: true, index: true })
+  @Column({ unique: true })
+  @Index() // ← можно и здесь, но лучше на уровне класса для ясности
   deviceId: string;
 
-  @Prop({ type: String, required: true })
+  @Column()
   ip: string;
 
-  @Prop({ type: String, required: true })
+  @Column()
   title: string;
 
-  @Prop({ type: Date, required: true })
+  @Column({ type: 'timestamptz' }) // или timestamp with time zone
   lastActiveDate: Date;
 
-  @Prop({ type: Date, required: true })
+  @Column({ type: 'timestamptz' })
   expirationDate: Date;
 
-  @Prop({ type: String, required: true })
+  @Column({ type: 'text' })
   refreshToken: string;
 }
-
-export const DeviceSchema = SchemaFactory.createForClass(Device);
-
-DeviceSchema.index({ userId: 1, lastActiveDate: -1 });
-DeviceSchema.index({ expirationDate: 1 });

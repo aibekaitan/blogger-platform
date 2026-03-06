@@ -1,59 +1,75 @@
 // src/security-devices/infrastructure/security-devices.query.repository.ts
 
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { DeviceDBWithId } from '../../types/devices.dto';
-import { Device, DeviceDocument } from '../../domain/device.model';
+import { DataSource } from 'typeorm';
 import { DeviceViewModel } from '../../domain/dto/view-dto';
-
-
 
 @Injectable()
 export class SecurityDevicesQueryRepository {
-  constructor(
-    @InjectModel(Device.name)
-    private readonly deviceModel: Model<DeviceDocument>,
-  ) {}
+  constructor(private readonly dataSource: DataSource) {}
 
-  private mapToViewModel(device: DeviceDBWithId): DeviceViewModel {
+  private mapToViewModel(row: any): DeviceViewModel {
     return {
-      ip: device.ip,
-      title: device.title,
-      lastActiveDate: device.lastActiveDate.toISOString(),
-      deviceId: device.deviceId,
+      ip: row.ip,
+      title: row.title,
+      lastActiveDate: new Date(row.lastActiveDate).toISOString(),
+      deviceId: row.deviceId,
     };
   }
 
   async findAllByUserId(userId: string): Promise<DeviceViewModel[]> {
-    const devices = await this.deviceModel
-      .find({ userId })
-      .sort({ lastActiveDate: -1 })
-      .select('-__v')
-      .lean();
+    const rows = await this.dataSource.query(
+      `
+      SELECT 
+        ip,
+        title,
+        "lastActiveDate",
+        "deviceId"
+      FROM devices
+      WHERE "userId" = $1
+      ORDER BY "lastActiveDate" DESC
+      `,
+      [userId],
+    );
 
-    return devices.map(this.mapToViewModel);
+    return rows.map((row) => this.mapToViewModel(row));
   }
 
   async findByDeviceId(deviceId: string): Promise<DeviceViewModel | null> {
-    const device = await this.deviceModel
-      .findOne({ deviceId })
-      .select('-__v')
-      .lean();
+    const [row] = await this.dataSource.query(
+      `
+      SELECT 
+        ip,
+        title,
+        "lastActiveDate",
+        "deviceId"
+      FROM devices
+      WHERE "deviceId" = $1
+      LIMIT 1
+      `,
+      [deviceId],
+    );
 
-    if (!device) {
+    if (!row) {
       return null;
     }
 
-    return this.mapToViewModel(device);
+    return this.mapToViewModel(row);
   }
 
   async existsByDeviceId(deviceId: string): Promise<boolean> {
-    // countDocuments с limit: 1 — эффективный способ проверить существование
-    const count = await this.deviceModel
-      .countDocuments({ deviceId }, { limit: 1 })
-      .exec();
+    const [result] = await this.dataSource.query(
+      `
+      SELECT EXISTS (
+        SELECT 1 
+        FROM devices 
+        WHERE "deviceId" = $1
+        LIMIT 1
+      ) AS "exists"
+      `,
+      [deviceId],
+    );
 
-    return count > 0;
+    return result?.exists === true;
   }
 }

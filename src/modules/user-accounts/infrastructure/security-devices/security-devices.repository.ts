@@ -1,94 +1,179 @@
 // src/security-devices/infrastructure/security-devices.repository.ts
 
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-
-import { Device, DeviceDocument } from '../../domain/device.model';
+import { DataSource } from 'typeorm';
+// import { Device } from '../entities/device.entity'; // твой entity
 import { DeviceDB, DeviceDBWithId } from '../../types/devices.dto';
 
 @Injectable()
 export class DevicesRepository {
-  constructor(
-    @InjectModel(Device.name) private deviceModel: Model<DeviceDocument>,
-  ) {}
+  constructor(private readonly dataSource: DataSource) {}
 
   async findAllByUserId(userId: string): Promise<DeviceDBWithId[]> {
-    return this.deviceModel
-      .find({ userId })
-      .sort({ lastActiveDate: -1 })
-      .select('-__v')
-      .lean();
+    const result = await this.dataSource.query(
+      `
+      SELECT 
+        id,
+        "userId",
+        "deviceId",
+        ip,
+        title,
+        "lastActiveDate",
+        "expirationDate",
+        "refreshToken"
+      FROM devices
+      WHERE "userId" = $1
+      ORDER BY "lastActiveDate" DESC
+      `,
+      [userId],
+    );
+
+    return result as DeviceDBWithId[];
   }
 
   async findByDeviceId(deviceId: string): Promise<DeviceDBWithId | null> {
-    return this.deviceModel.findOne({ deviceId }).select('-__v').lean();
+    const [result] = await this.dataSource.query(
+      `
+      SELECT 
+        id,
+        "userId",
+        "deviceId",
+        ip,
+        title,
+        "lastActiveDate",
+        "expirationDate",
+        "refreshToken"
+      FROM devices
+      WHERE "deviceId" = $1
+      LIMIT 1
+      `,
+      [deviceId],
+    );
+
+    return result || null;
   }
 
+  /**
+   * Upsert (insert or update) устройства
+   * Работает на PostgreSQL с ON CONFLICT
+   * Для MySQL замени на ON DUPLICATE KEY UPDATE
+   */
   async upsertDevice(
-    deviceData: Omit<DeviceDB, '_id'>,
+    deviceData: Omit<DeviceDB, 'id'>,
   ): Promise<DeviceDBWithId> {
-    const updatedDevice = await this.deviceModel
-      .findOneAndUpdate(
-        {
-          userId: deviceData.userId,
-          deviceId: deviceData.deviceId,
-        },
-        { $set: deviceData },
-        {
-          upsert: true, // создать, если не существует
-          new: true, // вернуть обновлённый документ
-          setDefaultsOnInsert: true, // применить default-значения из схемы
-          projection: { __v: 0 }, // исключить __v
-        },
-      )
-      .select('-__v') // дополнительно убрать __v
-      .lean<DeviceDBWithId>() // типизируем как plain object
-      .exec();
+    const {
+      userId,
+      deviceId,
+      ip,
+      title,
+      lastActiveDate,
+      expirationDate,
+      refreshToken,
+    } = deviceData;
 
-    if (!updatedDevice) {
-      throw new Error('Failed to upsert device'); // редкий кейс, но на всякий
+    const [updated] = await this.dataSource.query(
+      `
+      INSERT INTO devices (
+        "userId", 
+        "deviceId", 
+        ip, 
+        title, 
+        "lastActiveDate", 
+        "expirationDate", 
+        "refreshToken"
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      ON CONFLICT ("deviceId") 
+      DO UPDATE SET
+        ip = EXCLUDED.ip,
+        title = EXCLUDED.title,
+        "lastActiveDate" = EXCLUDED."lastActiveDate",
+        "expirationDate" = EXCLUDED."expirationDate",
+        "refreshToken" = EXCLUDED."refreshToken",
+        "userId" = EXCLUDED."userId"   -- на всякий случай, хотя обычно не меняется
+      RETURNING 
+        id,
+        "userId",
+        "deviceId",
+        ip,
+        title,
+        "lastActiveDate",
+        "expirationDate",
+        "refreshToken"
+      `,
+      [
+        userId,
+        deviceId,
+        ip,
+        title,
+        lastActiveDate,
+        expirationDate,
+        refreshToken,
+      ],
+    );
+
+    if (!updated) {
+      throw new Error('Failed to upsert device');
     }
 
-    return updatedDevice;
+    return updated as DeviceDBWithId;
   }
 
   async deleteByDeviceId(deviceId: string): Promise<boolean> {
-    const result = await this.deviceModel.deleteOne({ deviceId });
-    return result.deletedCount === 1;
+    const result = await this.dataSource.query(
+      `DELETE FROM devices WHERE "deviceId" = $1`,
+      [deviceId],
+    );
+
+    return (result[1] as number) === 1; // affected rows
   }
 
   async deleteAllExceptCurrent(
     userId: string,
     currentDeviceId: string,
   ): Promise<number> {
-    const result = await this.deviceModel.deleteMany({
-      userId,
-      deviceId: { $ne: currentDeviceId },
-    });
-    return result.deletedCount;
+    const result = await this.dataSource.query(
+      `
+      DELETE FROM devices 
+      WHERE "userId" = $1 
+      AND "deviceId" != $2
+      `,
+      [userId, currentDeviceId],
+    );
+
+    return result[1] as number;
   }
 
   async deleteAllByUserId(userId: string): Promise<number> {
-    const result = await this.deviceModel.deleteMany({ userId });
-    return result.deletedCount;
+    const result = await this.dataSource.query(
+      `DELETE FROM devices WHERE "userId" = $1`,
+      [userId],
+    );
+
+    return result[1] as number;
   }
 
   async deleteExpired(): Promise<number> {
-    const result = await this.deviceModel.deleteMany({
-      expirationDate: { $lt: new Date() },
-    });
-    return result.deletedCount;
+    const result = await this.dataSource.query(
+      `DELETE FROM devices WHERE "expirationDate" < NOW()`,
+    );
+
+    return result[1] as number;
   }
 
   async updateLastActiveDate(
     deviceId: string,
     newDate: Date = new Date(),
   ): Promise<boolean> {
-    const result = await this.deviceModel.updateOne(
-      { deviceId },
-      { $set: { lastActiveDate: newDate } },
+    const result = await this.dataSource.query(
+      `
+      UPDATE devices 
+      SET "lastActiveDate" = $1 
+      WHERE "deviceId" = $2
+      `,
+      [newDate, deviceId],
     );
-    return result.modifiedCount === 1;
+
+    return (result[1] as number) === 1;
   }
 }

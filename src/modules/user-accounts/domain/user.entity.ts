@@ -1,81 +1,74 @@
 import { randomUUID } from 'crypto';
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Model, Types } from 'mongoose';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  Index,
+} from 'typeorm';
 
-@Schema({
-  versionKey: false,
-  timestamps: { createdAt: true, updatedAt: false }, // createdAt будет Date
-})
+// Embeddable объект для email-подтверждения
+export class EmailConfirmation {
+  @Column({ nullable: false })
+  confirmationCode: string;
+
+  @Column({ type: 'timestamp', nullable: false })
+  expirationDate: Date;
+
+  @Column({ default: false })
+  isConfirmed: boolean;
+}
+
+@Entity('users')
+@Index(['login'], { unique: true })
+@Index(['email'], { unique: true })
 export class User {
-  @Prop({ type: Types.ObjectId, required: true, unique: true })
-  id: string;
+  @PrimaryGeneratedColumn('uuid')
+  id: string; // автоматически будет UUID строка
 
-  @Prop({ type: String, required: true, unique: true, trim: true })
+  @Column({ type: 'varchar', length: 30, unique: true, nullable: false })
   login: string;
 
-  @Prop({
-    type: String,
-    required: true,
-    unique: true,
-    trim: true,
-    lowercase: true,
-  })
+  @Column({ type: 'varchar', length: 255, unique: true, nullable: false })
   email: string;
 
-  @Prop({ type: String, required: true })
+  @Column({ type: 'varchar', length: 255, nullable: false })
   passwordHash: string;
 
+  @CreateDateColumn({ type: 'timestamp' })
   createdAt: Date;
 
-  @Prop({ default: '' })
+  @Column({ type: 'varchar', length: 500, nullable: true, default: null })
   refreshToken?: string;
 
-  @Prop({ default: () => randomUUID() })
+  @Column({
+    type: 'varchar',
+    length: 36,
+    nullable: false,
+    default: () => 'uuid_generate_v4()',
+  })
   passwordRecoveryCode: string;
 
-  @Prop({
-    type: {
-      confirmationCode: { type: String, required: true },
-      expirationDate: { type: Date, required: true },
-      isConfirmed: { type: Boolean, default: false },
-    },
-    default: () => ({
-      confirmationCode: randomUUID(),
-      expirationDate: new Date(Date.now() + 60 * 60 * 1000),
-      isConfirmed: false,
-    }),
-  })
-  emailConfirmation: {
-    confirmationCode: string;
-    expirationDate: Date;
-    isConfirmed: boolean;
+  @Column({ type: 'jsonb', nullable: false, default: () => "'{}'" })
+  emailConfirmation: EmailConfirmation = {
+    confirmationCode: randomUUID(),
+    expirationDate: new Date(Date.now() + 60 * 60 * 1000), // 1 час
+    isConfirmed: false,
   };
 
-  get idString(): string {
-    return this._id?.toString();
-  }
+  // Альтернатива: если хочешь отдельную таблицу — можно сделать @OneToOne, но для начала jsonb проще
 
-  _id: Types.ObjectId;
-
-  static createInstance(dto: {
-    id: string;
+  static create(dto: {
     login: string;
     email: string;
     passwordHash: string;
   }): User {
-    const user = new this();
-    user.id = dto.id;
+    const user = new User();
     user.login = dto.login.trim();
     user.email = dto.email.trim().toLowerCase();
     user.passwordHash = dto.passwordHash;
+    // id сгенерируется автоматически
+    // emailConfirmation и passwordRecoveryCode — дефолтные значения уже есть
     return user;
   }
 }
-
-export const UserSchema = SchemaFactory.createForClass(User);
-UserSchema.loadClass(User);
-
-export type UserDocument = HydratedDocument<User>;
-
-export type UserModelType = Model<UserDocument> & typeof User;
-UserSchema.loadClass(User);

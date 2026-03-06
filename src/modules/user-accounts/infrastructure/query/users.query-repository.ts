@@ -1,101 +1,147 @@
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
-import { User, UserDocument } from '../../domain/user.entity';
+import { DataSource } from 'typeorm';
 import { SortQueryFilterType } from '../../../../common/types/sortQueryFilter.type';
 import { IPagination } from '../../../../common/types/pagination';
 import { IUserView, IUserView2 } from '../../types/user.view.interface';
-import { IUserDB } from '../../types/user.db.interface';
-// import { IUserView, IUserView2 } from '../types/user.view.interface';
-// import { IUserDB } from '../types/user.db.interface';
-// import { IPagination } from '../../common/types/pagination';
-// import { SortQueryFilterType } from '../../common/types/sortQueryFilter.type';
-// import { User, UserDocument } from '../domain/user.entity';
 
 @Injectable()
 export class UsersQueryRepository {
-  constructor(
-    @InjectModel(User.name)
-    private readonly userModel: Model<UserDocument>,
-  ) {}
+  constructor(private readonly dataSource: DataSource) {}
 
   async findAllUsers(
     sortQueryDto: SortQueryFilterType,
   ): Promise<IPagination<IUserView[]>> {
     const {
-      searchEmailTerm,
-      searchLoginTerm,
+      searchEmailTerm = '',
+      searchLoginTerm = '',
       sortBy = 'createdAt',
-      sortDirection = -1,
+      sortDirection = 'desc', // теперь строка 'asc' | 'desc' (не -1/1)
       pageSize = 10,
       pageNumber = 1,
     } = sortQueryDto;
 
-    const filter: any = {};
-    const conds: Record<string, any>[] = [];
+    // Нормализуем sortDirection
+    const direction =
+      sortDirection === -1 || sortDirection === 'desc' ? 'DESC' : 'ASC';
 
-    if (searchLoginTerm)
-      conds.push({ login: { $regex: searchLoginTerm, $options: 'i' } });
-    if (searchEmailTerm)
-      conds.push({ email: { $regex: searchEmailTerm, $options: 'i' } });
+    // Безопасные поля для сортировки (защита от инъекций)
+    const allowedSortFields = ['login', 'email', 'createdAt'];
+    const safeSortBy = allowedSortFields.includes(sortBy)
+      ? sortBy
+      : 'createdAt';
 
-    if (conds.length > 0) filter.$or = conds;
+    // Базовый WHERE
+    let whereClause = '';
+    const params: any[] = [];
+    let paramIndex = 1;
 
-    const totalCount = await this.userModel.countDocuments(filter);
+    if (searchLoginTerm) {
+      whereClause += ` AND login ILIKE $${paramIndex}`;
+      params.push(`%${searchLoginTerm}%`);
+      paramIndex++;
+    }
 
-    const users = await this.userModel
-      .find(filter)
-      .sort({ [sortBy]: sortDirection })
-      .skip((pageNumber - 1) * pageSize)
-      .limit(pageSize)
-      .select(
-        '-__v -passwordHash -refreshToken -passwordRecoveryCode -emailConfirmation',
-      )
-      .lean()
-      .exec();
+    if (searchEmailTerm) {
+      whereClause += ` AND email ILIKE $${paramIndex}`;
+      params.push(`%${searchEmailTerm}%`);
+      paramIndex++;
+    }
+
+    // Убираем первый "AND" если есть
+    if (whereClause.startsWith(' AND')) {
+      whereClause = 'WHERE' + whereClause.substring(4);
+    }
+
+    // 1. Получаем общее количество (аналог countDocuments)
+    const countQuery = `
+      SELECT COUNT(*) as total
+      FROM users
+      ${whereClause}
+    `;
+
+    const countResult = await this.dataSource.query(countQuery, params);
+    const totalCount = Number(countResult[0]?.total ?? 0);
+
+    // 2. Получаем данные с пагинацией и сортировкой
+    const dataQuery = `
+      SELECT 
+        id,
+        login,
+        email,
+        createdAt
+      FROM users
+      ${whereClause}
+      ORDER BY "${safeSortBy}" ${direction}
+      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+    `;
+
+    // Добавляем параметры для LIMIT / OFFSET
+    const dataParams = [...params, pageSize, (pageNumber - 1) * pageSize];
+
+    const usersRaw = await this.dataSource.query(dataQuery, dataParams);
+
+    const items = usersRaw.map((row: any) => this._toUserView(row));
 
     return {
-      pagesCount: Math.ceil(totalCount / pageSize),
+      pagesCount: totalCount > 0 ? Math.ceil(totalCount / pageSize) : 0,
       page: pageNumber,
       pageSize,
       totalCount,
-      items: users.map((u) => this._toUserView(u)),
+      items,
     };
   }
 
   async getByIdOrNotFoundFail(id: string): Promise<IUserView> {
-    if (!Types.ObjectId.isValid(id)) throw new Error('Invalid user ID');
-
-    const user = await this.userModel
-      .findById(id)
-      .select(
-        '-__v -passwordHash -refreshToken -passwordRecoveryCode -emailConfirmation',
+    // Простая проверка UUID (если id — uuid)
+    if (
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        id,
       )
-      .lean()
-      .exec();
+    ) {
+      throw new Error('Invalid user ID');
+    }
 
-    if (!user) throw new Error('User not found');
+    const query = `
+      SELECT 
+        id,
+        login,
+        email,
+        createdAt
+      FROM users
+      WHERE id = $1
+      LIMIT 1
+    `;
+
+    const [user] = await this.dataSource.query(query, [id]);
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
     return this._toUserView(user);
   }
 
-  private _toUserView(user: IUserDB & { _id: Types.ObjectId }): IUserView {
+  private _toUserView(row: any): IUserView {
     return {
-      id: user._id.toString(),
-      login: user.login,
-      email: user.email,
-      createdAt: user.createdAt.toISOString(),
+      id: row.id, // уже строка (uuid)
+      login: row.login,
+      email: row.email,
+      createdAt: new Date(row.createdat).toISOString(), // PostgreSQL возвращает Date или строку
     };
   }
 
-  private _toUserView2(user: IUserDB & { _id: Types.ObjectId }): IUserView2 {
+  private _toUserView2(row: any): IUserView2 {
     return {
-      userId: user._id.toString(),
-      login: user.login,
-      email: user.email,
+      userId: row.id,
+      login: row.login,
+      email: row.email,
     };
   }
 
-  private _checkObjectId(id: string): boolean {
-    return Types.ObjectId.isValid(id);
+  // Если нужно — можно оставить, но в PostgreSQL обычно не нужно проверять ObjectId
+  private _checkId(id: string): boolean {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      id,
+    );
   }
 }
