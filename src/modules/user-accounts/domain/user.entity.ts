@@ -35,8 +35,8 @@ export class User {
   @Column({ type: 'varchar', length: 255, nullable: false })
   passwordHash: string;
 
-  @CreateDateColumn({ type: 'timestamp' })
-  createdat: Date;
+  @Column({ type: 'timestamp'})
+  createdAt: Date;
 
   @Column({ type: 'varchar', length: 500, nullable: true, default: null })
   refreshToken?: string;

@@ -68,7 +68,7 @@ export class UsersQueryRepository {
         id,
         login,
         email,
-        createdAt
+        "createdAt"
       FROM users
       ${whereClause}
       ORDER BY "${safeSortBy}" ${direction}
@@ -106,7 +106,7 @@ export class UsersQueryRepository {
         id,
         login,
         email,
-        createdAt
+        "createdAt"
       FROM users
       WHERE id = $1
       LIMIT 1
@@ -126,7 +126,7 @@ export class UsersQueryRepository {
       id: row.id, // уже строка (uuid)
       login: row.login,
       email: row.email,
-      createdAt: new Date(row.createdat).toISOString(), // PostgreSQL возвращает Date или строку
+      "createdAt": new Date(row.createdAt).toISOString(), // PostgreSQL возвращает Date или строку
     };
   }
 

@@ -66,7 +66,7 @@ export class UsersRepository {
 
     const rows = await this.dataSource.query(
       `INSERT INTO users
-    (login, email, "passwordHash", "createdat", "emailConfirmation", "passwordRecoveryCode")
+    (login, email, "passwordHash", "createdAt", "emailConfirmation", "passwordRecoveryCode")
    VALUES ($1, $2, $3, NOW(), $4::jsonb, $5)
    RETURNING id`,
       [
