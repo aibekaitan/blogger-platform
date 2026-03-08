@@ -13,17 +13,17 @@ import { TestingModule } from './testing/testing.module';
 
 @Module({
   imports: [
-    // ThrottlerModule.forRoot([
-    //   {
-    //     ttl: 60000, // 60 секунд
-    //     limit: 10, // глобально 10 req/min
-    //   },
-    //   {
-    //     name: 'resend', // отдельный трекер
-    //     ttl: 60000,
-    //     limit: 2, // всего 2 resend в минуту
-    //   },
-    // ]),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000, // 60 секунд
+        limit: 10, // глобально 10 req/min
+      },
+      {
+        name: 'resend', // отдельный трекер
+        ttl: 60000,
+        limit: 2, // всего 2 resend в минуту
+      },
+    ]),
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
