@@ -176,6 +176,7 @@ export class AuthController {
   async getMe(@CurrentUser() user: { id: string; login: string }) {
     return this.queryBus.execute(new GetMeQuery(user.id));
   }
+  @SkipThrottle()
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
   @UseGuards(RefreshTokenGuard)
