@@ -49,12 +49,8 @@ export class User {
   })
   passwordRecoveryCode: string;
 
-  @Column({ type: 'jsonb', nullable: false, default: () => "'{}'" })
-  emailConfirmation: EmailConfirmation = {
-    confirmationCode: randomUUID(),
-    expirationDate: new Date(Date.now() + 60 * 60 * 1000), // 1 час
-    isConfirmed: false,
-  };
+  @Column({ type: 'jsonb', nullable: false })
+  emailConfirmation: EmailConfirmation;
 
   // Альтернатива: если хочешь отдельную таблицу — можно сделать @OneToOne, но для начала jsonb проще
 
@@ -62,13 +58,21 @@ export class User {
     login: string;
     email: string;
     passwordHash: string;
+    confirmationCode: string;
+    expirationDate: Date;
   }): User {
     const user = new User();
+
     user.login = dto.login.trim();
     user.email = dto.email.trim().toLowerCase();
     user.passwordHash = dto.passwordHash;
-    // id сгенерируется автоматически
-    // emailConfirmation и passwordRecoveryCode — дефолтные значения уже есть
+
+    user.emailConfirmation = {
+      confirmationCode: dto.confirmationCode,
+      expirationDate: dto.expirationDate,
+      isConfirmed: false,
+    };
+
     return user;
   }
 }

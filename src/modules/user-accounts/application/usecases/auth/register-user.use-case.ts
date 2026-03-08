@@ -46,21 +46,24 @@ export class RegisterUserUseCase implements ICommandHandler<
     }
 
     const passwordHash = await this.bcryptService.generateHash(password);
+
     const confirmationCode = randomUUID();
     const expirationDate = new Date(Date.now() + 60 * 60 * 1000);
 
-    const dto = { id: uuidv4(), login, email, passwordHash };
-    const newUser = User.create(dto);
-    newUser.emailConfirmation = {
+    const newUser = User.create({
+      login,
+      email,
+      passwordHash,
       confirmationCode,
       expirationDate,
-      isConfirmed: false,
-    };
+    });
 
     await this.usersRepository.create(newUser);
 
-    await this.nodemailerService
-      .sendEmail(email, confirmationCode, emailExamples.registrationEmail)
-      .catch(console.error);
+    await this.nodemailerService.sendEmail(
+      email,
+      confirmationCode,
+      emailExamples.registrationEmail,
+    );
   }
 }
