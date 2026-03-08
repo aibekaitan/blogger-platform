@@ -1,25 +1,14 @@
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { Types } from 'mongoose';
+import { DataSource } from 'typeorm';
 
-// import { Like, LikeStatus } from '../../models/like.model';
-// import { IPagination } from '../../common/types/pagination';
-
-import { Comment } from '../../domain/comment.entity';
-import { CommentDB, CommentViewModel } from '../../dto/comments.dto';
+import { CommentViewModel } from '../../dto/comments.dto';
 import { SortQueryFilterType } from '../../../../common/types/sortQueryFilter.type';
 import { IPagination } from '../../../../common/types/pagination';
-import { Like, LikeStatus } from '../../domain/like.entity';
+import { LikeStatus } from '../../domain/like.entity';
 
 @Injectable()
 export class PostQueryRepository {
-  constructor(
-    @InjectModel(Comment.name)
-    private readonly commentModel: Model<CommentDB>,
-    @InjectModel(Like.name)
-    private readonly likeModel: Model<Like>,
-  ) {}
+  constructor(private readonly dataSource: DataSource) {}
 
   async findAllCommentsByPostId(
     postId: string,
@@ -28,20 +17,38 @@ export class PostQueryRepository {
   ): Promise<IPagination<CommentViewModel[]>> {
     const { sortBy, sortDirection, pageSize, pageNumber } = sortQueryDto;
 
-    const filter: any = { postId };
+    const offset = (pageNumber - 1) * pageSize;
 
-    const totalCount = await this.commentModel.countDocuments(filter);
+    const totalCountResult = await this.dataSource.query(
+      `
+      SELECT COUNT(*) FROM comments
+      WHERE "postId" = $1
+      `,
+      [postId],
+    );
 
-    const comments = await this.commentModel
-      .find(filter)
-      .sort({ [sortBy]: sortDirection })
-      .skip((pageNumber - 1) * pageSize)
-      .limit(pageSize)
-      .select('-_id -__v')
-      .lean();
+    const totalCount = Number(totalCountResult[0].count);
+
+    const comments = await this.dataSource.query(
+      `
+      SELECT 
+        c.id,
+        c.content,
+        c."userId",
+        c."userLogin",
+        c."createdAt"
+      FROM comments c
+      WHERE c."postId" = $1
+      ORDER BY "${sortBy}" ${sortDirection}
+      LIMIT $2 OFFSET $3
+      `,
+      [postId, pageSize, offset],
+    );
 
     const items = await Promise.all(
-      comments.map((comment) => this._getInViewComment(comment, currentUserId)),
+      comments.map((comment) =>
+        this._getInViewComment(comment, currentUserId),
+      ),
     );
 
     return {
@@ -53,50 +60,66 @@ export class PostQueryRepository {
     };
   }
 
-  public async _getInViewComment(
-    comment: CommentDB,
+  async _getInViewComment(
+    comment: any,
     currentUserId?: string | null,
   ): Promise<CommentViewModel> {
-    const [likesCount, dislikesCount, myLike] = await Promise.all([
-      this.likeModel.countDocuments({
-        parentId: comment.id,
-        parentType: 'Comment',
-        status: LikeStatus.Like,
-      }),
-      this.likeModel.countDocuments({
-        parentId: comment.id,
-        parentType: 'Comment',
-        status: LikeStatus.Dislike,
-      }),
-      currentUserId
-        ? this.likeModel
-            .findOne({
-              parentId: comment.id,
-              parentType: 'Comment',
-              authorId: currentUserId,
-            })
-            .select('status')
-            .lean()
-        : null,
-    ]);
+    const [likesCountResult, dislikesCountResult, myLikeResult] =
+      await Promise.all([
+        this.dataSource.query(
+          `
+          SELECT COUNT(*) FROM likes
+          WHERE "parentId" = $1
+          AND "parentType" = 'Comment'
+          AND status = 'Like'
+          `,
+          [comment.id],
+        ),
+
+        this.dataSource.query(
+          `
+          SELECT COUNT(*) FROM likes
+          WHERE "parentId" = $1
+          AND "parentType" = 'Comment'
+          AND status = 'Dislike'
+          `,
+          [comment.id],
+        ),
+
+        currentUserId
+          ? this.dataSource.query(
+            `
+              SELECT status FROM likes
+              WHERE "parentId" = $1
+              AND "parentType" = 'Comment'
+              AND "authorId" = $2
+              `,
+            [comment.id, currentUserId],
+          )
+          : Promise.resolve([]),
+      ]);
+
+    const likesCount = Number(likesCountResult[0].count);
+    const dislikesCount = Number(dislikesCountResult[0].count);
+
+    const myStatus =
+      myLikeResult.length > 0
+        ? myLikeResult[0].status
+        : LikeStatus.None;
 
     return {
       id: comment.id,
       content: comment.content,
       commentatorInfo: {
-        userId: comment.commentatorInfo.userId,
-        userLogin: comment.commentatorInfo.userLogin ?? 'Deleted user',
+        userId: comment.userId,
+        userLogin: comment.userLogin ?? 'Deleted user',
       },
       createdAt: comment.createdAt,
       likesInfo: {
         likesCount,
         dislikesCount,
-        myStatus: myLike?.status ?? LikeStatus.None,
+        myStatus,
       },
     };
-  }
-
-  private _checkObjectId(id: string): boolean {
-    return Types.ObjectId.isValid(id);
   }
 }

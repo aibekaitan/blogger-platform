@@ -35,7 +35,7 @@ export class User {
   @Column({ type: 'varchar', length: 255, nullable: false })
   passwordHash: string;
 
-  @Column({ type: 'timestamp'})
+  @Column({ type: 'timestamp' })
   createdAt: Date;
 
   @Column({ type: 'varchar', length: 500, nullable: true, default: null })

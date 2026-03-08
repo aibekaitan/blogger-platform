@@ -1,25 +1,18 @@
-// src/comments/infrastructure/comment.repository.ts
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { DataSource } from 'typeorm';
 import {
   CommentDB,
   CommentInputModel,
   CommentViewModel,
   LikesInfoViewModel,
 } from '../dto/comments.dto';
-import { Comment, CommentDocument } from '../domain/comment.entity';
-import { Like, LikeDocument, LikeStatus } from '../domain/like.entity';
+import { LikeStatus } from '../domain/like.entity';
 import { UsersRepository } from '../../user-accounts/infrastructure/users.repository';
 
 @Injectable()
 export class CommentRepository {
   constructor(
-    @InjectModel(Comment.name)
-    private readonly commentModel: Model<CommentDocument>,
-
-    @InjectModel(Like.name)
-    private readonly likeModel: Model<LikeDocument>,
+    private readonly dataSource: DataSource,
     private readonly usersRepository: UsersRepository,
   ) {}
 
@@ -34,88 +27,150 @@ export class CommentRepository {
       throw new NotFoundException(`User with id ${userId} not found`);
     }
 
-    const userLogin = user.login;
+    const id = crypto.randomUUID();
+    const createdAt = new Date();
 
-    const newComment = new this.commentModel({
-      id: crypto.randomUUID(),
+    await this.dataSource.query(
+      `
+      INSERT INTO comments(
+        id,
+        "postId",
+        content,
+        "userId",
+        "userLogin",
+        "createdAt"
+      )
+      VALUES ($1,$2,$3,$4,$5,$6)
+      `,
+      [id, postId, dto.content.trim(), userId, user.login, createdAt],
+    );
+
+    return {
+      id,
       postId,
       content: dto.content.trim(),
       commentatorInfo: {
         userId,
-        userLogin,
+        userLogin: user.login,
       },
-      createdAt: new Date().toISOString(),
-    });
-
-    await newComment.save();
-
-    return newComment.toObject({
-      versionKey: false,
-      transform: (doc, ret) => {
-        return ret;
-      },
-    }) as CommentDB;
+      createdAt,
+    };
   }
 
   async delete(id: string): Promise<boolean> {
-    const result = await this.commentModel.deleteOne({ id }).exec();
-    return result.deletedCount === 1;
+    const result = await this.dataSource.query(
+      `
+      DELETE FROM comments
+      WHERE id = $1
+      `,
+      [id],
+    );
+
+    return result.rowCount === 1;
   }
 
   async findById(id: string): Promise<CommentDB | null> {
-    return this.commentModel.findOne({ id }).select('-__v').lean().exec();
+    const result = await this.dataSource.query(
+      `
+      SELECT id,
+             "postId",
+             content,
+             "userId",
+             "userLogin",
+             "createdAt"
+      FROM comments
+      WHERE id = $1
+      `,
+      [id],
+    );
+
+    if (!result.length) return null;
+
+    const comment = result[0];
+
+    return {
+      id: comment.id,
+      postId: comment.postId,
+      content: comment.content,
+      commentatorInfo: {
+        userId: comment.userId,
+        userLogin: comment.userLogin,
+      },
+      createdAt: comment.createdAt,
+    };
   }
 
   async findByIdWithLikes(
     id: string,
     currentUserId?: string,
   ): Promise<CommentViewModel | null> {
-    const comment = await this.commentModel
-      .findOne({ id })
-      .select('-__v')
-      .lean()
-      .exec();
-
+    const comment = await this.findById(id);
     if (!comment) return null;
 
-    const [likesCount, dislikesCount, myLike] = await Promise.all([
-      this.likeModel.countDocuments({
-        parentId: id,
-        parentType: 'Comment',
-        status: LikeStatus.Like,
-      }),
-      this.likeModel.countDocuments({
-        parentId: id,
-        parentType: 'Comment',
-        status: LikeStatus.Dislike,
-      }),
-      currentUserId
-        ? this.likeModel
-            .findOne({
-              parentId: id,
-              parentType: 'Comment',
-              authorId: currentUserId,
-            })
-            .lean()
-        : null,
-    ]);
+    const likesCount = await this.dataSource.query(
+      `
+      SELECT COUNT(*) 
+      FROM likes
+      WHERE "parentId" = $1
+      AND "parentType" = 'Comment'
+      AND status = 'Like'
+      `,
+      [id],
+    );
+
+    const dislikesCount = await this.dataSource.query(
+      `
+      SELECT COUNT(*) 
+      FROM likes
+      WHERE "parentId" = $1
+      AND "parentType" = 'Comment'
+      AND status = 'Dislike'
+      `,
+      [id],
+    );
+
+    let myStatus = LikeStatus.None;
+
+    if (currentUserId) {
+      const myLike = await this.dataSource.query(
+        `
+        SELECT status
+        FROM likes
+        WHERE "parentId"=$1
+        AND "parentType"='Comment'
+        AND "authorId"=$2
+        `,
+        [id, currentUserId],
+      );
+
+      if (myLike.length) {
+        myStatus = myLike[0].status;
+      }
+    }
 
     const likesInfo: LikesInfoViewModel = {
-      likesCount,
-      dislikesCount,
-      myStatus: myLike?.status || LikeStatus.None,
+      likesCount: Number(likesCount[0].count),
+      dislikesCount: Number(dislikesCount[0].count),
+      myStatus,
     };
 
     return {
       ...comment,
       likesInfo,
-    } as CommentViewModel;
+    };
   }
 
-  async update(id: string, dto: CommentInputModel): Promise<void> {
-    await this.commentModel
-      .updateOne({ id }, { $set: { content: dto.content.trim() } })
-      .exec();
+  async update(id: string, dto: CommentInputModel): Promise<boolean> {
+    const result = await this.dataSource.query(
+      `
+      UPDATE comments
+      SET content = $1
+      WHERE id = $2
+      `,
+      [dto.content.trim(), id],
+    );
+
+    return result.rowCount === 1;
   }
 
   async setLikeStatus(
@@ -124,21 +179,40 @@ export class CommentRepository {
     likeStatus: LikeStatus,
   ): Promise<void> {
     if (likeStatus === LikeStatus.None) {
-      await this.likeModel
-        .deleteOne({
-          parentId: commentId,
-          parentType: 'Comment',
-          authorId: userId,
-        })
-        .exec();
+      await this.dataSource.query(
+        `
+        DELETE FROM likes
+        WHERE "parentId"=$1
+        AND "parentType"='Comment'
+        AND "authorId"=$2
+        `,
+        [commentId, userId],
+      );
     } else {
-      await this.likeModel
-        .updateOne(
-          { parentId: commentId, parentType: 'Comment', authorId: userId },
-          { $set: { status: likeStatus, createdAt: new Date() } },
-          { upsert: true },
+      await this.dataSource.query(
+        `
+        INSERT INTO likes(
+          id,
+          "parentId",
+          "parentType",
+          "authorId",
+          status,
+          "createdAt"
         )
-        .exec();
+        VALUES ($1,$2,'Comment',$3,$4,$5)
+        ON CONFLICT ("parentId","authorId")
+        DO UPDATE SET
+        status = $4,
+        "createdAt" = $5
+        `,
+        [
+          crypto.randomUUID(),
+          commentId,
+          userId,
+          likeStatus,
+          new Date(),
+        ],
+      );
     }
   }
 }

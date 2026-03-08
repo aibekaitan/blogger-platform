@@ -1,91 +1,98 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-
-// import { Post, PostDocument } from '../schemas/post.schema';
-// import { Comment, CommentDocument } from '../../comments/schemas/comment.schema';
-// import { Like, LikeDocument, LikeStatus } from '../../likes/schemas/like.schema';
-// import { PostInputModel } from '../dto/post.input';
-// import { CommentInputModel, CommentDB } from '../../comments/types/comments.dto';
-import { DeleteResult, UpdateResult } from 'mongodb';
-import { UsersRepository } from '../../user-accounts/infrastructure/users.repository';
-import { Post, PostDocument } from '../domain/post.entity';
-import { Comment, CommentDocument } from '../domain/comment.entity';
-import { Like, LikeDocument, LikeStatus } from '../domain/like.entity';
-import { CommentDB, CommentInputModel } from '../dto/comments.dto';
-import { PostType } from '../types/post';
-import { PostInputModelType } from '../types/post.input.type';
+import { DataSource } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
+import { Post } from '../domain/post.entity';
+import { Comment } from '../domain/comment.entity';
+import { Like, LikeStatus } from '../domain/like.entity';
+import { UsersRepository } from '../../user-accounts/infrastructure/users.repository';
+import { PostInputModelType } from '../types/post.input.type';
+import { CommentInputModel, CommentDB } from '../dto/comments.dto';
 import { mapPostToView } from '../api/middlewares/posts.mapper';
 
 @Injectable()
 export class PostRepository {
   constructor(
-    @InjectModel(Post.name)
-    private readonly postModel: Model<PostDocument>,
-
-    @InjectModel(Comment.name)
-    private readonly commentModel: Model<CommentDocument>,
-
-    @InjectModel(Like.name)
-    private readonly likeModel: Model<LikeDocument>,
-
+    private readonly dataSource: DataSource,
     private readonly usersRepository: UsersRepository,
   ) {}
+
+  async findById(
+    id: string,
+    currentUserId?: string | null,
+  ): Promise<Post | null> {
+    const rows = await this.dataSource.query(
+      `SELECT * FROM posts WHERE id = $1 LIMIT 1`,
+      [id],
+    );
+    const post = rows[0];
+    if (!post) return null;
+
+    // лайк текущего пользователя
+    let myStatus = LikeStatus.None;
+    if (currentUserId) {
+      const likeRows = await this.dataSource.query(
+        `SELECT status FROM likes WHERE "parentType"='Post' AND "parentId"=$1 AND "authorId"=$2 LIMIT 1`,
+        [id, currentUserId],
+      );
+      if (likeRows[0]) myStatus = likeRows[0].status;
+    }
+
+    return {
+      ...post,
+      extendedLikesInfo: {
+        likesCount: post.likesCount ?? 0,
+        dislikesCount: post.dislikesCount ?? 0,
+        myStatus,
+        newestLikes: post.newestLikes ?? [],
+      },
+    };
+  }
 
   async findAll(
     params: {
       pageNumber: number;
       pageSize: number;
       sortBy: string;
-      sortDirection: string;
+      sortDirection: 'asc' | 'desc';
     },
     currentUserId?: string | null,
   ) {
     const { pageNumber, pageSize, sortBy, sortDirection } = params;
-    const direction = sortDirection === 'asc' ? 1 : -1;
+    const offset = (pageNumber - 1) * pageSize;
 
-    const totalCount = await this.postModel.countDocuments();
+    const totalCountResult = await this.dataSource.query(
+      `SELECT COUNT(*) as count FROM posts`,
+    );
+    const totalCount = parseInt(totalCountResult[0].count, 10);
 
-    const dbItems = await this.postModel
-      .find({})
-      .sort({ [sortBy]: direction })
-      .skip((pageNumber - 1) * pageSize)
-      .limit(pageSize)
-      .lean();
+    const posts = await this.dataSource.query(
+      `
+      SELECT * FROM posts
+      ORDER BY "${sortBy}" ${sortDirection.toUpperCase()}
+      OFFSET $1 LIMIT $2
+      `,
+      [offset, pageSize],
+    );
 
+    // лайки текущего пользователя
     const userLikesMap = new Map<string, LikeStatus>();
-
     if (currentUserId) {
-      const userLikes = await this.likeModel
-        .find({
-          parentType: 'Post',
-          authorId: currentUserId,
-        })
-        .select('parentId status')
-        .lean();
-
-      userLikes.forEach((like) => {
-        userLikesMap.set(like.parentId, like.status as LikeStatus);
-      });
+      const likes = await this.dataSource.query(
+        `SELECT "parentId", status FROM likes WHERE "parentType"='Post' AND "authorId"=$1`,
+        [currentUserId],
+      );
+      likes.forEach((like) => userLikesMap.set(like.parentId, like.status));
     }
 
-    const items = dbItems.map((post) => {
-      const extendedLikesInfo = post.extendedLikesInfo ?? {
-        likesCount: 0,
-        dislikesCount: 0,
-        newestLikes: [],
-      };
-      return {
-        ...post,
-        extendedLikesInfo: {
-          likesCount: extendedLikesInfo.likesCount,
-          dislikesCount: extendedLikesInfo.dislikesCount,
-          myStatus: userLikesMap.get(post.id) ?? LikeStatus.None,
-          newestLikes: [...extendedLikesInfo.newestLikes],
-        },
-      };
-    });
+    const items = posts.map((post) => ({
+      ...post,
+      extendedLikesInfo: {
+        likesCount: post.likesCount ?? 0,
+        dislikesCount: post.dislikesCount ?? 0,
+        myStatus: userLikesMap.get(post.id) ?? LikeStatus.None,
+        newestLikes: post.newestLikes ?? [],
+      },
+    }));
 
     return {
       pagesCount: Math.ceil(totalCount / pageSize),
@@ -96,59 +103,59 @@ export class PostRepository {
     };
   }
 
-  async findById(
-    id: string,
-    currentUserId?: string | null,
-  ): Promise<PostType | null> {
-    console.log(currentUserId);
-    console.log(await this.postModel.countDocuments());
-    const dbPost = await this.postModel.findOne({ id }).lean();
-    console.log(dbPost);
-    if (!dbPost) return null;
+  async create(dto: PostInputModelType, blogName: string): Promise<Post> {
+    const id = uuidv4();
+    const createdAt = new Date();
 
-    let myStatus = LikeStatus.None;
-
-    if (currentUserId) {
-      const like = await this.likeModel
-        .findOne({
-          parentId: id,
-          parentType: 'Post',
-          authorId: currentUserId,
-        })
-        .lean();
-
-      myStatus = (like?.status as LikeStatus) ?? LikeStatus.None;
-    }
+    await this.dataSource.query(
+      `
+      INSERT INTO posts (id, title, "shortDescription", content, "blogId", "blogName", "createdAt", "likesCount", "dislikesCount", "newestLikes")
+      VALUES ($1, $2, $3, $4, $5, $6, $7, 0, 0, '[]'::jsonb)
+      `,
+      [
+        id,
+        dto.title,
+        dto.shortDescription,
+        dto.content,
+        dto.blogId,
+        blogName,
+        createdAt,
+      ],
+    );
 
     return {
-      ...dbPost,
-      extendedLikesInfo: {
-        likesCount: dbPost.extendedLikesInfo?.likesCount ?? 0,
-        dislikesCount: dbPost.extendedLikesInfo?.dislikesCount ?? 0,
-        myStatus,
-        newestLikes: [...(dbPost.extendedLikesInfo?.newestLikes ?? [])],
-      },
-    };
-  }
-
-  async create(dto: PostInputModelType, blogName: string): Promise<any> {
-    const newPost = new this.postModel({
-      id: uuidv4(),
+      id,
       title: dto.title,
       shortDescription: dto.shortDescription,
       content: dto.content,
       blogId: dto.blogId,
       blogName,
-      createdAt: new Date().toISOString(),
+      createdAt,
+      extendedLikesInfo: { likesCount: 0, dislikesCount: 0, newestLikes: [] },
+    } as unknown as Post;
+  }
 
-      extendedLikesInfo: {
-        likesCount: 0,
-        dislikesCount: 0,
-        newestLikes: [],
-      },
-    });
+  async update(id: string, dto: PostInputModelType): Promise<{ matchedCount: number }> {
+    const result = await this.dataSource.query(
+      `
+    UPDATE posts
+    SET title=$1, "shortDescription"=$2, content=$3, "blogId"=$4
+    WHERE id=$5
+    RETURNING id
+    `,
+      [dto.title, dto.shortDescription, dto.content, dto.blogId, id],
+    );
 
-    return newPost.save();
+    // result — массив обновлённых строк
+    return { matchedCount: result.length };
+  }
+
+  async delete(id: string): Promise<{ deletedCount: number }> {
+    const result = await this.dataSource.query(
+      `DELETE FROM posts WHERE id=$1 RETURNING id`,
+      [id],
+    );
+    return { deletedCount: result.length };
   }
 
   async createComment(
@@ -157,115 +164,82 @@ export class PostRepository {
     userId: string,
   ): Promise<CommentDB> {
     const user = await this.usersRepository.findById(userId);
-
-    const createdAt = new Date().toISOString();
+    const id = uuidv4();
+    const createdAt = new Date();
 
     const comment: CommentDB = {
-      id: createdAt,
+      id,
       content: dto.content,
       postId,
-      commentatorInfo: {
-        userId,
-        userLogin: user?.login,
-      },
+      commentatorInfo: { userId, userLogin: user?.login ?? '' },
       createdAt,
     };
 
-    await this.commentModel.create(comment);
+    await this.dataSource.query(
+      `INSERT INTO comments (id, content, "postId", "userId", "userLogin", "createdAt")
+       VALUES ($1,$2,$3,$4,$5,$6)`,
+      [id, dto.content, postId, userId, user?.login ?? '', createdAt],
+    );
 
     return comment;
-  }
-
-  async update(id: string, dto: PostInputModelType): Promise<UpdateResult> {
-    return this.postModel.updateOne(
-      { id },
-      {
-        $set: {
-          title: dto.title,
-          shortDescription: dto.shortDescription,
-          content: dto.content,
-          blogId: dto.blogId,
-        },
-      },
-    );
-  }
-
-  async delete(id: string): Promise<DeleteResult> {
-    return this.postModel.deleteOne({ id });
   }
 
   async setLikeStatus(postId: string, userId: string, likeStatus: LikeStatus) {
     const user = await this.usersRepository.findById(userId);
     if (!user) throw new NotFoundException('User not found');
 
-    const likeDoc = await this.likeModel
-      .findOne({
-        parentId: postId,
-        parentType: 'Post',
-        authorId: userId,
-      })
-      .lean();
-
-    const prevStatus = likeDoc?.status ?? LikeStatus.None;
+    const likeRows = await this.dataSource.query(
+      `SELECT * FROM likes WHERE "parentType"='Post' AND "parentId"=$1 AND "authorId"=$2`,
+      [postId, userId],
+    );
+    const prevStatus = likeRows[0]?.status ?? LikeStatus.None;
 
     if (prevStatus === likeStatus) return;
 
-    const postUpdate: any = { $inc: {} };
+    // Обновляем пост
+    const postRows = await this.dataSource.query(
+      `SELECT * FROM posts WHERE id=$1`,
+      [postId],
+    );
+    if (!postRows[0]) throw new NotFoundException('Post not found');
+    const post = postRows[0];
+
+    let likesCount = post.likesCount ?? 0;
+    let dislikesCount = post.dislikesCount ?? 0;
+    let newestLikes = post.newestLikes ?? [];
 
     if (prevStatus === LikeStatus.Like) {
-      postUpdate.$inc['extendedLikesInfo.likesCount'] = -1;
-      postUpdate.$pull = { 'extendedLikesInfo.newestLikes': { userId } };
+      likesCount--;
+      newestLikes = newestLikes.filter((l) => l.userId !== userId);
     }
-    if (prevStatus === LikeStatus.Dislike) {
-      postUpdate.$inc['extendedLikesInfo.dislikesCount'] = -1;
-    }
+    if (prevStatus === LikeStatus.Dislike) dislikesCount--;
 
     if (likeStatus === LikeStatus.Like) {
-      postUpdate.$inc['extendedLikesInfo.likesCount'] =
-        postUpdate.$inc['extendedLikesInfo.likesCount'] || 0 + 1;
-
-      postUpdate.$push = {
-        'extendedLikesInfo.newestLikes': {
-          $each: [
-            {
-              addedAt: new Date().toISOString(),
-              userId,
-              login: user.login,
-            },
-          ],
-          $position: 0,
-          $slice: 3,
-        },
-      };
+      likesCount++;
+      newestLikes.unshift({ addedAt: new Date(), userId, login: user.login });
+      newestLikes = newestLikes.slice(0, 3);
     }
+    if (likeStatus === LikeStatus.Dislike) dislikesCount++;
 
-    if (likeStatus === LikeStatus.Dislike) {
-      postUpdate.$inc['extendedLikesInfo.dislikesCount'] =
-        postUpdate.$inc['extendedLikesInfo.dislikesCount'] || 0 + 1;
-    }
-
-    if (Object.keys(postUpdate).length > 0) {
-      await this.postModel.updateOne({ id: postId }, postUpdate);
-    }
+    await this.dataSource.query(
+      `UPDATE posts SET "likesCount"=$1, "dislikesCount"=$2, "newestLikes"=$3 WHERE id=$4`,
+      [likesCount, dislikesCount, JSON.stringify(newestLikes), postId],
+    );
 
     if (likeStatus === LikeStatus.None) {
-      await this.likeModel.deleteOne({
-        parentId: postId,
-        parentType: 'Post',
-        authorId: userId,
-      });
+      await this.dataSource.query(
+        `DELETE FROM likes WHERE "parentType"='Post' AND "parentId"=$1 AND "authorId"=$2`,
+        [postId, userId],
+      );
     } else {
-      await this.likeModel.updateOne(
-        { parentId: postId, parentType: 'Post', authorId: userId },
-        { $set: { status: likeStatus, createdAt: new Date().toISOString() } },
-        { upsert: true },
+      await this.dataSource.query(
+        `
+        INSERT INTO likes ("parentId","parentType","authorId","status","createdAt")
+        VALUES ($1,'Post',$2,$3,$4)
+        ON CONFLICT ("parentId","parentType","authorId") DO UPDATE SET status=$3, "createdAt"=$4
+        `,
+        [postId, userId, likeStatus, new Date()],
       );
     }
-    console.log('setLikeStatus finished', {
-      postId,
-      userId,
-      likeStatus,
-      prevStatus,
-    });
   }
 }

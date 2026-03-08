@@ -8,7 +8,7 @@ export class CommentViewModel {
   id: string;
   content: string;
   commentatorInfo: CommentatorInfo;
-  createdAt: string;
+  createdAt: Date;
   likesInfo: LikesInfoViewModel;
 }
 
@@ -23,7 +23,7 @@ export interface CommentDB {
   postId: string;
   content: string;
   commentatorInfo: CommentatorInfo;
-  createdAt: string;
+  createdAt: Date;
 }
 
 export interface CommentatorInfo {

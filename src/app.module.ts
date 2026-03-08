@@ -10,6 +10,7 @@ import { UserAccountsModule } from './modules/user-accounts/user-accounts.module
 import { CoreModule } from './core/core.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { TestingModule } from './testing/testing.module';
+import { BloggersPlatformModule } from './modules/bloggers-platform/bloggers-platform.module';
 
 @Module({
   imports: [
@@ -57,7 +58,7 @@ import { TestingModule } from './testing/testing.module';
 
     TestingModule,
     UserAccountsModule,
-    // BloggersPlatformModule,
+    BloggersPlatformModule,
     CoreModule,
   ],
   controllers: [AppController],

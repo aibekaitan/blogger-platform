@@ -1,66 +1,55 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Model, Types } from 'mongoose';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  Index,
+} from 'typeorm';
 
-@Schema({
-  versionKey: false, // __v disabled
-  timestamps: { createdAt: true, updatedAt: false },
-})
+@Entity('blogs')
+@Index(['id'], { unique: true })
+@Index(['name'], { unique: true })
 export class Blog {
-  _id: Types.ObjectId;
+  @PrimaryGeneratedColumn('uuid')
+  id: string; // UUID строки, аналог _id + id в Mongo
 
-  @Prop({ type: String, required: true, unique: true })
-  id: string;
-
-  @Prop({ type: String, required: true, trim: true })
+  @Column({ type: 'varchar', length: 255, nullable: false })
   name: string;
 
-  @Prop({ type: String, required: true, trim: true })
+  @Column({ type: 'varchar', length: 1000, nullable: false })
   description: string;
 
-  @Prop({ type: String, required: true })
+  @Column({ type: 'varchar', length: 255, nullable: false })
   websiteUrl: string;
 
-  @Prop({ type: String, required: true })
-  createdAt: string;
+  @CreateDateColumn({ type: 'timestamp' })
+  createdAt: Date;
 
-  @Prop({ type: Boolean, default: false })
+  @Column({ type: 'boolean', default: false })
   isMembership: boolean;
 
-  get stringId(): string {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-    return this._id?.toString();
-  }
-
+  // ================= STATIC CREATE =================
   static create(dto: {
-    id: string;
     name: string;
     description: string;
     websiteUrl: string;
   }): Blog {
-    const blog = new this();
-    blog.id = dto.id;
+    const blog = new Blog();
     blog.name = dto.name.trim();
     blog.description = dto.description.trim();
     blog.websiteUrl = dto.websiteUrl;
-    blog.createdAt = new Date().toISOString();
     blog.isMembership = false;
+    // createdAt будет автоматически проставлен благодаря @CreateDateColumn
     return blog;
   }
 
-  updateNameAndDescription(newName: string, newDescription: string): void {
-    if (newName?.trim()) {
-      this.name = newName.trim();
-    }
-    if (newDescription?.trim()) {
-      this.description = newDescription.trim();
-    }
-  }
+  // ================= UPDATE METHODS =================
+  // updateNameAndDescription(newName?: string, newDescription?: string): void {
+  //   if (newName?.trim()) {
+  //     this.name = newName.trim();
+  //   }
+  //   if (newDescription?.trim()) {
+  //     this.description = newDescription.trim();
+  //   }
+  // }
 }
-
-export const BlogSchema = SchemaFactory.createForClass(Blog);
-
-BlogSchema.loadClass(Blog);
-
-export type BlogDocument = HydratedDocument<Blog>;
-
-export type BlogModelType = Model<BlogDocument> & typeof Blog;

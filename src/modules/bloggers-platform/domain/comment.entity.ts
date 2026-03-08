@@ -1,60 +1,55 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Types } from 'mongoose';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  Index,
+} from 'typeorm';
 
-export interface ICommentatorInfo {
-  userId: string;
-  userLogin: string;
-}
-
-@Schema({
-  versionKey: false,
-  timestamps: { createdAt: true, updatedAt: false },
-})
+@Entity('comments')
+@Index(['id'], { unique: true })
 export class Comment {
-  _id: Types.ObjectId;
-  @Prop({ type: String, required: true, unique: true })
+  @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Prop({ type: String, required: true })
+  @Column({ type: 'uuid', nullable: false })
   postId: string;
 
-  @Prop({ type: String, required: true, trim: true })
+  @Column({ type: 'text', nullable: false })
   content: string;
 
-  @Prop({
-    type: {
-      userId: { type: String, required: true },
-      userLogin: { type: String, required: true },
-    },
-    required: true,
-    _id: false,
-  })
-  commentatorInfo: ICommentatorInfo;
+  @Column({ type: 'uuid', nullable: false })
+  userId: string;
 
-  @Prop({ type: String, required: true })
-  createdAt: string;
+  @Column({ type: 'varchar', length: 255, nullable: false })
+  userLogin: string;
 
-  get stringId(): string {
-    return this._id?.toString();
-  }
+  @CreateDateColumn({ type: 'timestamp' })
+  createdAt: Date;
+
+  // ================= STATIC CREATE =================
 
   static create(dto: {
-    id: string;
     postId: string;
     content: string;
-    commentatorInfo: ICommentatorInfo;
+    userId: string;
+    userLogin: string;
   }): Comment {
-    const comment = new this();
-    comment.id = dto.id;
+    const comment = new Comment();
+
     comment.postId = dto.postId;
     comment.content = dto.content.trim();
-    comment.commentatorInfo = dto.commentatorInfo;
-    comment.createdAt = new Date().toISOString();
+    comment.userId = dto.userId;
+    comment.userLogin = dto.userLogin;
+
     return comment;
   }
+
+  // ================= UPDATE =================
+
+  updateContent(content: string) {
+    if (content?.trim()) {
+      this.content = content.trim();
+    }
+  }
 }
-
-export const CommentSchema = SchemaFactory.createForClass(Comment);
-CommentSchema.loadClass(Comment);
-
-export type CommentDocument = HydratedDocument<Comment>;

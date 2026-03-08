@@ -1,91 +1,93 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Model, Types } from 'mongoose';
-import { Blog, BlogDocument } from './blog.entity';
-// import { LikeStatus } from './like.entity';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  Index,
+} from 'typeorm';
 
-@Schema({
-  versionKey: false,
-  timestamps: false,
-})
+interface NewestLike {
+  addedAt: string;
+  userId: string;
+  login: string;
+}
+
+@Entity('posts')
+@Index(['id'], { unique: true })
 export class Post {
-  _id: Types.ObjectId;
-  @Prop({ type: String, required: true, unique: true })
+  @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Prop({ type: String, required: true, trim: true })
+  @Column({ type: 'varchar', length: 255, nullable: false })
   title: string;
 
-  @Prop({ type: String, required: true, trim: true })
+  @Column({ type: 'varchar', length: 500, nullable: false })
   shortDescription: string;
 
-  @Prop({ type: String, required: true })
+  @Column({ type: 'text', nullable: false })
   content: string;
 
-  @Prop({ type: String, required: true })
+  @Column({ type: 'uuid', nullable: false })
   blogId: string;
 
-  @Prop({ type: String, required: true })
+  @Column({ type: 'varchar', length: 255, nullable: false })
   blogName: string;
 
-  @Prop({ type: String, required: true })
-  createdAt: string;
+  @CreateDateColumn({ type: 'timestamp' })
+  createdAt: Date;
 
-  @Prop({
-    type: {
-      likesCount: { type: Number, default: 0, min: 0 },
-      dislikesCount: { type: Number, default: 0, min: 0 },
-      newestLikes: {
-        type: [
-          {
-            addedAt: { type: String, required: true },
-            userId: { type: String, required: true },
-            login: { type: String, required: true },
-          },
-        ],
-        default: [],
-        _id: false,
-      },
-    },
-    _id: false,
+  @Column({
+    type: 'jsonb',
+    nullable: false,
+    default: () => `'{"likesCount":0,"dislikesCount":0,"newestLikes":[]}'`,
   })
   extendedLikesInfo: {
     likesCount: number;
     dislikesCount: number;
-    newestLikes: Array<{ addedAt: string; userId: string; login: string }>;
+    newestLikes: NewestLike[];
   };
 
-  // get stringId(): string {
-  //   return this._id?.toString();
-  // }
-
+  // ================= STATIC CREATE =================
   static create(dto: {
-    id: string;
     title: string;
     shortDescription: string;
     content: string;
     blogId: string;
     blogName: string;
   }): Post {
-    const post = new this();
-    post.id = dto.id;
+    const post = new Post();
     post.title = dto.title.trim();
     post.shortDescription = dto.shortDescription.trim();
     post.content = dto.content;
     post.blogId = dto.blogId;
     post.blogName = dto.blogName;
-    post.createdAt = new Date().toISOString();
     post.extendedLikesInfo = {
       likesCount: 0,
       dislikesCount: 0,
       newestLikes: [],
     };
+    // createdAt автоматически через @CreateDateColumn
     return post;
   }
+
+  // ================= UPDATE METHODS =================
+  updateContent(
+    title?: string,
+    shortDescription?: string,
+    content?: string,
+  ): void {
+    if (title?.trim()) this.title = title.trim();
+    if (shortDescription?.trim())
+      this.shortDescription = shortDescription.trim();
+    if (content?.trim()) this.content = content;
+  }
+
+  // Можно добавить метод для обновления extendedLikesInfo, если нужно
+  updateLikesInfo(
+    likesCount: number,
+    dislikesCount: number,
+    newestLikes: NewestLike[],
+  ) {
+    this.extendedLikesInfo = { likesCount, dislikesCount, newestLikes };
+  }
 }
-
-export const PostSchema = SchemaFactory.createForClass(Post);
-PostSchema.loadClass(Post);
-
-export type PostDocument = HydratedDocument<Post>;
-
-export type PostModelType = Model<PostDocument> & typeof Post;
