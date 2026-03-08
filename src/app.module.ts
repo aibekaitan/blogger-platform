@@ -15,12 +15,12 @@ import { TestingModule } from './testing/testing.module';
   imports: [
     ThrottlerModule.forRoot([
       {
-        ttl: 60000, // 60 секунд
+        ttl: 60, // 60 секунд
         limit: 10, // глобально 10 req/min
       },
       {
         name: 'resend', // отдельный трекер
-        ttl: 60000,
+        ttl: 60,
         limit: 2, // всего 2 resend в минуту
       },
     ]),
