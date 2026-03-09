@@ -196,8 +196,9 @@ export class BlogsRepository {
     const createdAt = new Date();
 
     await this.dataSource.query(
-      `INSERT INTO posts (id, title, "shortDescription", content, "blogId", "blogName", "createdAt", "likesCount", "dislikesCount", "newestLikes")
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 0, 0, '[]'::jsonb)`,
+      `INSERT INTO posts
+       (id, title, "shortDescription", content, "blogId", "blogName", "createdAt", "extendedLikesInfo")
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb)`,
       [
         id,
         dto.title,
@@ -206,6 +207,7 @@ export class BlogsRepository {
         blog.id,
         blog.name,
         createdAt,
+        JSON.stringify({ likesCount: 0, dislikesCount: 0, newestLikes: [] }),
       ],
     );
 
