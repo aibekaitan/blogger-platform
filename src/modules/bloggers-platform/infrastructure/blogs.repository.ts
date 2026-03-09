@@ -47,15 +47,7 @@ export class BlogsRepository {
     description: string;
     websiteUrl: string;
   }): Promise<Blog> {
-    // 1️⃣ Проверяем, есть ли блог с таким именем
-    const existing = await this.dataSource.query(
-      `SELECT id FROM blogs WHERE name = $1`,
-      [blogData.name.trim()],
-    );
 
-    if (existing.length > 0) {
-      throw new ConflictException('Blog with this name already exists'); // или BadRequestException, если тесты требуют 400
-    }
 
     // 2️⃣ Создаём новый блог
     const id = uuidv4();

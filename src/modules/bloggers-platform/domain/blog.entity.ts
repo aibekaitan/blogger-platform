@@ -8,7 +8,7 @@ import {
 
 @Entity('blogs')
 @Index(['id'], { unique: true })
-@Index(['name'], { unique: true })
+// @Index(['name'], { unique: true })
 export class Blog {
   @PrimaryGeneratedColumn('uuid')
   id: string; // UUID строки, аналог _id + id в Mongo
