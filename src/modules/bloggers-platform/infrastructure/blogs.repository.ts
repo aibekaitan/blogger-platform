@@ -1,5 +1,9 @@
 // blogs.repository.ts
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { Blog } from '../domain/blog.entity';
 import { Post } from '../domain/post.entity';
@@ -43,20 +47,31 @@ export class BlogsRepository {
     description: string;
     websiteUrl: string;
   }): Promise<Blog> {
+    // 1️⃣ Проверяем, есть ли блог с таким именем
+    const existing = await this.dataSource.query(
+      `SELECT id FROM blogs WHERE name = $1`,
+      [blogData.name.trim()],
+    );
 
+    if (existing.length > 0) {
+      throw new ConflictException('Blog with this name already exists'); // или BadRequestException, если тесты требуют 400
+    }
+
+    // 2️⃣ Создаём новый блог
     const id = uuidv4();
     const createdAt = new Date();
 
     await this.dataSource.query(
       `INSERT INTO blogs (id, name, description, "websiteUrl", "createdAt", "isMembership")
-       VALUES ($1, $2, $3, $4, $5, false)`,
-      [id, blogData.name, blogData.description, blogData.websiteUrl, createdAt],
+     VALUES ($1, $2, $3, $4, $5, false)`,
+      [id, blogData.name.trim(), blogData.description.trim(), blogData.websiteUrl, createdAt],
     );
 
+    // 3️⃣ Возвращаем объект блога
     return {
       id,
-      name: blogData.name,
-      description: blogData.description,
+      name: blogData.name.trim(),
+      description: blogData.description.trim(),
       websiteUrl: blogData.websiteUrl,
       createdAt,
       isMembership: false,

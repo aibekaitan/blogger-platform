@@ -45,7 +45,7 @@ export class SaBlogsController {
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
   ) {}
-
+  @UseGuards(BasicAuthGuard)
   @Get()
   @ApiOperation({ summary: 'Get all blogs with pagination' })
   @ApiResponse({ status: 200, description: 'Blogs returned' })
