@@ -18,6 +18,6 @@ export class DeletePostHandler implements ICommandHandler<
   async execute(command: DeletePostCommand): Promise<boolean> {
     const { postId } = command;
     const deleteResult = await this.postRepository.delete(postId);
-    return deleteResult.deletedCount === 1;
+    return deleteResult;
   }
 }

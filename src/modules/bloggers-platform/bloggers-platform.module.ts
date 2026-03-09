@@ -50,6 +50,7 @@ import { User } from '../user-accounts/domain/user.entity';
 import { Comment } from './domain/comment.entity';
 import { SaBlogsController } from './api/sa.blogs.controller';
 import { UpdatePostForBlogHandler } from './application/usecases/blogs/update-post-for-blog.handler';
+import { DeletePostForBlogHandler } from './application/usecases/blogs/delete-post-for-blog.handler';
 
 //тут регистрируем провайдеры всех сущностей блоггерской платформы (blogs, posts, comments, etc...)
 @Module({
@@ -95,6 +96,7 @@ import { UpdatePostForBlogHandler } from './application/usecases/blogs/update-po
     GetBlogByIdHandler,
     GetPostsByBlogIdHandler,
     UpdatePostForBlogHandler,
+    DeletePostForBlogHandler,
     BlogsRepository,
 
     GetCommentByIdHandler,

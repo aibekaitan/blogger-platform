@@ -153,12 +153,13 @@ export class PostRepository {
     return { matchedCount: result.length };
   }
 
-  async delete(id: string): Promise<{ deletedCount: number }> {
+  async delete(id: string): Promise<boolean> {
     const result = await this.dataSource.query(
-      `DELETE FROM posts WHERE id=$1 RETURNING id`,
+      `DELETE FROM posts WHERE id=$1`,
       [id],
     );
-    return { deletedCount: result.length };
+
+    return result[1] > 0;
   }
 
   async createComment(

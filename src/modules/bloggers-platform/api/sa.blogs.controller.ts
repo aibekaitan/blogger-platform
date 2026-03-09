@@ -40,6 +40,7 @@ import { UpdatePostCommand } from '../application/usecases/posts/update-post.han
 import { UpdatePostForBlogCommand } from '../application/usecases/blogs/update-post-for-blog.handler';
 import { PostInputModel } from '../dto/input-dto/post.input';
 import { UpdatePostForBlogDto } from '../dto/input-dto/update.post.for.blog.dto';
+import { DeletePostForBlogCommand } from '../application/usecases/blogs/delete-post-for-blog.handler';
 
 @NoRateLimit()
 @ApiTags('SaBlogs')
@@ -167,6 +168,21 @@ export class SaBlogsController {
     );
 
     if (!updated) {
+      throw new NotFoundException('Post not found');
+    }
+  }
+  @UseGuards(BasicAuthGuard)
+  @Delete(':blogId/posts/:postId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deletePostByBlog(
+    @Param('blogId') blogId: string,
+    @Param('postId') postId: string,
+  ) {
+    const deleted = await this.commandBus.execute(
+      new DeletePostForBlogCommand(blogId, postId),
+    );
+
+    if (!deleted) {
       throw new NotFoundException('Post not found');
     }
   }
