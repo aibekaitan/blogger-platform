@@ -65,13 +65,17 @@ export class BlogsRepository {
 
   async delete(id: string): Promise<boolean> {
     const result = await this.dataSource.query(
-      `DELETE FROM blogs WHERE id = $1`,
+      `DELETE FROM blogs WHERE id = $1::uuid RETURNING id`,
       [id],
     );
 
-    // result.rowCount работает, если использовать queryRunner.query()
-    // для dataSource.query() можно делать SELECT после DELETE или использовать RETURNING и проверять result[0]
-    return result[0]?.id !== undefined;
+    // result может быть [[{ id: '...' }], 0] или [{id: '...'}]
+    // поэтому проверяем наличие хотя бы одного объекта с id
+
+
+
+
+    return result[1]>0;
   }
   async findAllBlogs(params: {
     pageNumber: number;
