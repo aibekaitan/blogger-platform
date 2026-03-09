@@ -135,7 +135,10 @@ export class PostRepository {
     } as unknown as Post;
   }
 
-  async update(id: string, dto: PostInputModelType): Promise<{ matchedCount: number }> {
+  async update(
+    id: string,
+    dto: PostInputModelType,
+  ): Promise<{ matchedCount: number }> {
     const result = await this.dataSource.query(
       `
     UPDATE posts
@@ -241,5 +244,13 @@ export class PostRepository {
         [postId, userId, likeStatus, new Date()],
       );
     }
+  }
+  async findOneByIds(blogId: string, postId: string): Promise<Post | null> {
+    return this.dataSource.getRepository(Post).findOne({
+      where: { id: postId, blogId },
+    });
+  }
+  async save(post: Post) {
+    return this.dataSource.getRepository(Post).save(post);
   }
 }

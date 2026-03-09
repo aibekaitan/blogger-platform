@@ -36,6 +36,10 @@ import { CreateBlogCommand } from '../application/usecases/blogs/create-blog.han
 import { CreatePostForBlogCommand } from '../application/usecases/blogs/create-post-for-blog.handler';
 import { UpdateBlogCommand } from '../application/usecases/blogs/update-blog.handler';
 import { DeleteBlogCommand } from '../application/usecases/blogs/delete-blog.handler';
+import { UpdatePostCommand } from '../application/usecases/posts/update-post.handler';
+import { UpdatePostForBlogCommand } from '../application/usecases/blogs/update-post-for-blog.handler';
+import { PostInputModel } from '../dto/input-dto/post.input';
+import { UpdatePostForBlogDto } from '../dto/input-dto/update.post.for.blog.dto';
 
 @NoRateLimit()
 @ApiTags('SaBlogs')
@@ -148,5 +152,22 @@ export class SaBlogsController {
 
     // 204 No Content
     return;
+  }
+
+  @UseGuards(BasicAuthGuard)
+  @Put(':blogId/posts/:postId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async updatePostByBlog(
+    @Param('blogId') blogId: string,
+    @Param('postId') postId: string,
+    @Body() dto: UpdatePostForBlogDto,
+  ) {
+    const updated = await this.commandBus.execute(
+      new UpdatePostForBlogCommand(blogId, postId, dto),
+    );
+
+    if (!updated) {
+      throw new NotFoundException('Post not found');
+    }
   }
 }
