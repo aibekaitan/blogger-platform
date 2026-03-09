@@ -14,14 +14,14 @@ import { BloggersPlatformModule } from './modules/bloggers-platform/bloggers-pla
 
 @Module({
   imports: [
-    ThrottlerModule.forRoot({
-      throttlers: [
-        {
-          ttl: 10000,
-          limit: 5,
-        },
-      ],
-    }),
+    // ThrottlerModule.forRoot({
+    //   throttlers: [
+    //     {
+    //       ttl: 10000,
+    //       limit: 5,
+    //     },
+    //   ],
+    // }),
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',

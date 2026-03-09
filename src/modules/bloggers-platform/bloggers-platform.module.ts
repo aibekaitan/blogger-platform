@@ -48,6 +48,7 @@ import { Blog } from './domain/blog.entity';
 import { Post } from './domain/post.entity';
 import { User } from '../user-accounts/domain/user.entity';
 import { Comment } from './domain/comment.entity';
+import { SaBlogsController } from './api/sa.blogs.controller';
 
 //тут регистрируем провайдеры всех сущностей блоггерской платформы (blogs, posts, comments, etc...)
 @Module({
@@ -59,7 +60,7 @@ import { Comment } from './domain/comment.entity';
     //   { name: Comment.name, schema: CommentSchema },
     //   { name: Like.name, schema: LikeSchema },
     // ]),
-    TypeOrmModule.forFeature([Blog, Post, User,Comment]),
+    TypeOrmModule.forFeature([Blog, Post, User, Comment]),
     UserAccountsModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({
@@ -69,7 +70,11 @@ import { Comment } from './domain/comment.entity';
     CqrsModule,
   ],
 
-  controllers: [BlogsController, PostController, /*CommentsController*/],
+  controllers: [
+    BlogsController,
+    SaBlogsController,
+    PostController /*CommentsController*/,
+  ],
   providers: [
     // UsersExternalQueryRepository,
     // UsersExternalService,

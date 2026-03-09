@@ -38,9 +38,9 @@ import { UpdateBlogCommand } from '../application/usecases/blogs/update-blog.han
 import { DeleteBlogCommand } from '../application/usecases/blogs/delete-blog.handler';
 
 @NoRateLimit()
-@ApiTags('Blogs')
+@ApiTags('SaBlogs')
 @Controller('/sa/blogs')
-export class BlogsController {
+export class SaBlogsController {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
