@@ -66,11 +66,11 @@ export class Post {
       dislikesCount: 0,
       newestLikes: [],
     };
-    // createdAt автоматически через @CreateDateColumn
+
     return post;
   }
 
-  // ================= UPDATE METHODS =================
+
   updateContent(
     title?: string,
     shortDescription?: string,
@@ -82,7 +82,7 @@ export class Post {
     if (content?.trim()) this.content = content;
   }
 
-  // Можно добавить метод для обновления extendedLikesInfo, если нужно
+
   updateLikesInfo(
     likesCount: number,
     dislikesCount: number,

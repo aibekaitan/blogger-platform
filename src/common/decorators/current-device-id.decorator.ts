@@ -1,5 +1,3 @@
-// src/common/decorators/current-device-id.decorator.ts
-
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 
 export const CurrentDeviceId = createParamDecorator(

@@ -11,7 +11,7 @@ import {
 // @Index(['name'], { unique: true })
 export class Blog {
   @PrimaryGeneratedColumn('uuid')
-  id: string; // UUID строки, аналог _id + id в Mongo
+  id: string;
 
   @Column({ type: 'varchar', length: 255, nullable: false })
   name: string;
@@ -27,8 +27,6 @@ export class Blog {
 
   @Column({ type: 'boolean', default: false })
   isMembership: boolean;
-
-  // ================= STATIC CREATE =================
   static create(dto: {
     name: string;
     description: string;
@@ -39,11 +37,9 @@ export class Blog {
     blog.description = dto.description.trim();
     blog.websiteUrl = dto.websiteUrl;
     blog.isMembership = false;
-    // createdAt будет автоматически проставлен благодаря @CreateDateColumn
     return blog;
   }
 
-  // ================= UPDATE METHODS =================
   // updateNameAndDescription(newName?: string, newDescription?: string): void {
   //   if (newName?.trim()) {
   //     this.name = newName.trim();

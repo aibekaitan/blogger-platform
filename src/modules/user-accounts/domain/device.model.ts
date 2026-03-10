@@ -11,7 +11,7 @@ export class Device {
   userId: string;
 
   @Column({ unique: true })
-  @Index() // ← можно и здесь, но лучше на уровне класса для ясности
+  @Index()
   deviceId: string;
 
   @Column()
@@ -20,7 +20,7 @@ export class Device {
   @Column()
   title: string;
 
-  @Column({ type: 'timestamptz' }) // или timestamp with time zone
+  @Column({ type: 'timestamptz' })
   lastActiveDate: Date;
 
   @Column({ type: 'timestamptz' })

@@ -27,7 +27,7 @@ export class PostRepository {
     const post = rows[0];
     if (!post) return null;
 
-    // лайк текущего пользователя
+
     let myStatus = LikeStatus.None;
     if (currentUserId) {
       const likeRows = await this.dataSource.query(
@@ -74,7 +74,7 @@ export class PostRepository {
       [offset, pageSize],
     );
 
-    // лайки текущего пользователя
+
     const userLikesMap = new Map<string, LikeStatus>();
     if (currentUserId) {
       const likes = await this.dataSource.query(
@@ -149,7 +149,6 @@ export class PostRepository {
       [dto.title, dto.shortDescription, dto.content, dto.blogId, id],
     );
 
-    // result — массив обновлённых строк
     return { matchedCount: result.length };
   }
 
@@ -200,7 +199,7 @@ export class PostRepository {
 
     if (prevStatus === likeStatus) return;
 
-    // Обновляем пост
+
     const postRows = await this.dataSource.query(
       `SELECT * FROM posts WHERE id=$1`,
       [postId],

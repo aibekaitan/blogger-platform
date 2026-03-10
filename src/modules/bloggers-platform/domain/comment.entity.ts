@@ -27,7 +27,7 @@ export class Comment {
   @CreateDateColumn({ type: 'timestamp' })
   createdAt: Date;
 
-  // ================= STATIC CREATE =================
+
 
   static create(dto: {
     postId: string;
@@ -45,7 +45,7 @@ export class Comment {
     return comment;
   }
 
-  // ================= UPDATE =================
+
 
   updateContent(content: string) {
     if (content?.trim()) {

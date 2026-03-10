@@ -34,21 +34,20 @@ import { BloggersPlatformModule } from './modules/bloggers-platform/bloggers-pla
 
         return {
           type: 'postgres' as const,
-          url: configService.get<string>('DATABASE_URL'), // ← сюда всю строку от Neon
-          // или отдельно (если хочешь):
+          url: configService.get<string>('DATABASE_URL'),
           // host: configService.get('PG_HOST'),
           // port: +configService.get('PG_PORT') || 5432,
           // username: configService.get('PG_USER'),
           // password: configService.get('PG_PASSWORD'),
           // database: configService.get('PG_DATABASE'),
 
-          autoLoadEntities: true, // автоматически подтянет все @Entity()
-          synchronize: true, // в продакшене → false!!! (используй миграции)
-          logging: ['query', 'error'], // или true для отладки
-          ssl: true, // Neon требует SSL
+          autoLoadEntities: true,
+          synchronize: true,
+          logging: ['query', 'error'],
+          ssl: true,
           extra: {
             ssl: {
-              rejectUnauthorized: false, // важно для Neon (сертификат самоподписанный)
+              rejectUnauthorized: false,
             },
           },
         };

@@ -23,7 +23,6 @@ export class UpdatePostForBlogHandler implements ICommandHandler<
   async execute(command: UpdatePostForBlogCommand): Promise<boolean> {
     const { blogId, postId, dto } = command;
 
-    // Ищем пост сразу с blogId
     const post = await this.postRepository.findOneByIds(blogId, postId);
     if (!post) return false;
 

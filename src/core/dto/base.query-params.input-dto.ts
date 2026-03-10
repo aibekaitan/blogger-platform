@@ -2,7 +2,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 import { Type } from 'class-transformer';
-import { SortDirection } from '../types/sort'; // или откуда у тебя enum
+import { SortDirection } from '../types/sort';
 
 export class BaseQueryParams {
   @ApiPropertyOptional({

@@ -49,7 +49,7 @@ export class BlogsRepository {
   }): Promise<Blog> {
 
 
-    // 2️⃣ Создаём новый блог
+
     const id = uuidv4();
     const createdAt = new Date();
 
@@ -59,7 +59,7 @@ export class BlogsRepository {
       [id, blogData.name.trim(), blogData.description.trim(), blogData.websiteUrl, createdAt],
     );
 
-    // 3️⃣ Возвращаем объект блога
+
     return {
       id,
       name: blogData.name.trim(),
@@ -75,13 +75,6 @@ export class BlogsRepository {
       `DELETE FROM blogs WHERE id = $1::uuid RETURNING id`,
       [id],
     );
-
-    // result может быть [[{ id: '...' }], 0] или [{id: '...'}]
-    // поэтому проверяем наличие хотя бы одного объекта с id
-
-
-
-
     return result[1]>0;
   }
   async findAllBlogs(params: {
@@ -159,7 +152,7 @@ export class BlogsRepository {
       [blogId, offset, params.pageSize],
     );
 
-    // лайки текущего пользователя
+
     const userLikesMap = new Map<string, LikeStatus>();
     if (currentUserId) {
       const likes = await this.dataSource.query(

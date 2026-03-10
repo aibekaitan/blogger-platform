@@ -15,22 +15,22 @@ export class UsersQueryRepository {
       searchEmailTerm = '',
       searchLoginTerm = '',
       sortBy = 'createdAt',
-      sortDirection = 'desc', // теперь строка 'asc' | 'desc' (не -1/1)
+      sortDirection = 'desc',
       pageSize = 10,
       pageNumber = 1,
     } = sortQueryDto;
 
-    // Нормализуем sortDirection
+
     const direction =
       sortDirection === -1 || sortDirection === 'desc' ? 'DESC' : 'ASC';
 
-    // Безопасные поля для сортировки (защита от инъекций)
+
     const allowedSortFields = ['login', 'email', 'createdAt'];
     const safeSortBy = allowedSortFields.includes(sortBy)
       ? sortBy
       : 'createdAt';
 
-    // Базовый WHERE
+
     let whereClause = '';
     const params: any[] = [];
     let paramIndex = 1;
@@ -53,7 +53,7 @@ export class UsersQueryRepository {
       whereClause = `WHERE (${conditions.join(' OR ')})`;
     }
 
-    // 1. Получаем общее количество (аналог countDocuments)
+
     const countQuery = `
       SELECT COUNT(*) as total
       FROM users
@@ -63,7 +63,7 @@ export class UsersQueryRepository {
     const countResult = await this.dataSource.query(countQuery, params);
     const totalCount = Number(countResult[0]?.total ?? 0);
 
-    // 2. Получаем данные с пагинацией и сортировкой
+
     const dataQuery = `
       SELECT 
         id,
@@ -76,7 +76,7 @@ export class UsersQueryRepository {
       LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
     `;
 
-    // Добавляем параметры для LIMIT / OFFSET
+
     const dataParams = [...params, pageSize, (pageNumber - 1) * pageSize];
 
     const usersRaw = await this.dataSource.query(dataQuery, dataParams);
@@ -93,7 +93,6 @@ export class UsersQueryRepository {
   }
 
   async getByIdOrNotFoundFail(id: string): Promise<IUserView> {
-    // Простая проверка UUID (если id — uuid)
     if (
       !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
         id,
@@ -124,10 +123,10 @@ export class UsersQueryRepository {
 
   private _toUserView(row: any): IUserView {
     return {
-      id: row.id, // уже строка (uuid)
+      id: row.id,
       login: row.login,
       email: row.email,
-      "createdAt": new Date(row.createdAt).toISOString(), // PostgreSQL возвращает Date или строку
+      "createdAt": new Date(row.createdAt).toISOString(),
     };
   }
 
@@ -139,7 +138,7 @@ export class UsersQueryRepository {
     };
   }
 
-  // Если нужно — можно оставить, но в PostgreSQL обычно не нужно проверять ObjectId
+
   private _checkId(id: string): boolean {
     return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
       id,

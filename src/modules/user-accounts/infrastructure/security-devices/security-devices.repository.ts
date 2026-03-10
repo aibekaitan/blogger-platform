@@ -1,8 +1,5 @@
-// src/security-devices/infrastructure/security-devices.repository.ts
-
 import { Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-// import { Device } from '../entities/device.entity'; // твой entity
 import { DeviceDB, DeviceDBWithId } from '../../types/devices.dto';
 
 @Injectable()
@@ -53,11 +50,7 @@ export class DevicesRepository {
     return result || null;
   }
 
-  /**
-   * Upsert (insert or update) устройства
-   * Работает на PostgreSQL с ON CONFLICT
-   * Для MySQL замени на ON DUPLICATE KEY UPDATE
-   */
+
   async upsertDevice(
     deviceData: Omit<DeviceDB, 'id'>,
   ): Promise<DeviceDBWithId> {
@@ -90,7 +83,7 @@ export class DevicesRepository {
         "lastActiveDate" = EXCLUDED."lastActiveDate",
         "expirationDate" = EXCLUDED."expirationDate",
         "refreshToken" = EXCLUDED."refreshToken",
-        "userId" = EXCLUDED."userId"   -- на всякий случай, хотя обычно не меняется
+        "userId" = EXCLUDED."userId"
       RETURNING 
         id,
         "userId",
@@ -125,7 +118,7 @@ export class DevicesRepository {
       [deviceId],
     );
 
-    return (result[1] as number) === 1; // affected rows
+    return (result[1] as number) === 1;
   }
 
   async deleteAllExceptCurrent(

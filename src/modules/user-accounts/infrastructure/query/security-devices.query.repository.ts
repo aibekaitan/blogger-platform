@@ -1,5 +1,3 @@
-// src/security-devices/infrastructure/security-devices.query.repository.ts
-
 import { Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { DeviceViewModel } from '../../domain/dto/view-dto';

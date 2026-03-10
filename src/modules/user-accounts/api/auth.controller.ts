@@ -103,7 +103,7 @@ export class AuthController {
       ),
     );
 
-    // 204 No Content
+
   }
 
   @Post('registration-confirmation')
@@ -138,7 +138,6 @@ export class AuthController {
       new ChangePasswordCommand(dto.recoveryCode, dto.newPassword),
     );
   }
-  // в auth.controller.ts или где удобно
   // @Get('debug-token')
   // @NoRateLimit() // или без guards вообще
   // async debug(@Headers('authorization') authHeader: string) {
@@ -192,6 +191,6 @@ export class AuthController {
       sameSite: 'strict',
     });
 
-    // 204 No Content
+
   }
 }

@@ -136,7 +136,7 @@ export class SaBlogsController {
       throw new NotFoundException('Blog not found');
     }
 
-    // 204 No Content
+
     return;
   }
 
@@ -151,7 +151,7 @@ export class SaBlogsController {
       throw new NotFoundException('Blog not found');
     }
 
-    // 204 No Content
+
     return;
   }
 

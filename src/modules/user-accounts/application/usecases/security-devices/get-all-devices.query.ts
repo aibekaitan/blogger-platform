@@ -3,7 +3,7 @@ import { QueryHandler, IQueryHandler } from '@nestjs/cqrs';
 
 import { Query } from '@nestjs/cqrs';
 import { DeviceViewModel } from '../../../domain/dto/view-dto';
-import { SecurityDevicesQueryRepository } from '../../../infrastructure/security-devices/security-devices.query.repository';
+import { SecurityDevicesQueryRepository } from '../../../infrastructure/query/security-devices.query.repository';
 
 export class GetAllDevicesQuery extends Query<DeviceViewModel[]> {
   constructor(public readonly userId: string) {

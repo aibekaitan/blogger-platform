@@ -31,7 +31,7 @@ import { TerminateAllExceptCurrentHandler } from './application/usecases/securit
 import { TerminateDeviceHandler } from './application/usecases/security-devices/terminate-device.command';
 import { GetAllDevicesHandler } from './application/usecases/security-devices/get-all-devices.query';
 import { DevicesRepository } from './infrastructure/security-devices/security-devices.repository';
-import { SecurityDevicesQueryRepository } from './infrastructure/security-devices/security-devices.query.repository';
+import { SecurityDevicesQueryRepository } from './infrastructure/query/security-devices.query.repository';
 // import { Device, DeviceSchema } from './domain/device.model';
 import { RefreshTokenGuard } from './api/guards/refresh-token.guard';
 import { LogoutUseCase } from './application/usecases/auth/logout-user.use-case';

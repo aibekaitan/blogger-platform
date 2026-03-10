@@ -131,7 +131,6 @@ export class BlogsController {
       throw new NotFoundException('Blog not found');
     }
 
-    // 204 No Content
     return;
   }
 
@@ -146,7 +145,6 @@ export class BlogsController {
       throw new NotFoundException('Blog not found');
     }
 
-    // 204 No Content
     return;
   }
 }

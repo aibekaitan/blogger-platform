@@ -7,7 +7,6 @@ import {
   Index,
 } from 'typeorm';
 
-// Embeddable объект для email-подтверждения
 export class EmailConfirmation {
   @Column({ nullable: false })
   confirmationCode: string;
@@ -24,7 +23,7 @@ export class EmailConfirmation {
 @Index(['email'], { unique: true })
 export class User {
   @PrimaryGeneratedColumn('uuid')
-  id: string; // автоматически будет UUID строка
+  id: string;
 
   @Column({ type: 'varchar', length: 30, unique: true, nullable: false })
   login: string;
@@ -52,7 +51,7 @@ export class User {
   @Column({ type: 'jsonb', nullable: false })
   emailConfirmation: EmailConfirmation;
 
-  // Альтернатива: если хочешь отдельную таблицу — можно сделать @OneToOne, но для начала jsonb проще
+
 
   static create(dto: {
     login: string;

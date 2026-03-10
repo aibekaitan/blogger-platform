@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
-@Schema({ versionKey: false }) // убираем __v
+@Schema({ versionKey: false })
 export class RequestLog extends Document {
   @Prop({ required: true })
   ip: string;

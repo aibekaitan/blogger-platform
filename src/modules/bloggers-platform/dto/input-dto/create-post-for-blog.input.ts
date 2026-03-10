@@ -1,4 +1,3 @@
-// src/bloggers-platform/dto/input-dto/create-post-for-blog.input.ts
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsString, Length } from 'class-validator';
 import { Transform } from 'class-transformer';
