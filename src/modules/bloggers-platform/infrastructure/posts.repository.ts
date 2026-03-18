@@ -206,6 +206,7 @@ export class PostRepository {
     const user = await this.usersRepository.findById(userId);
     if (!user) throw new NotFoundException('User not found');
 
+    // Получаем предыдущий лайк пользователя
     const likeRows = await this.dataSource.query(
       `SELECT * FROM likes WHERE "parentType"='Post' AND "parentId"=$1 AND "authorId"=$2`,
       [postId, userId],
@@ -214,7 +215,7 @@ export class PostRepository {
 
     if (prevStatus === likeStatus) return;
 
-
+    // Получаем пост и его extendedLikesInfo
     const postRows = await this.dataSource.query(
       `SELECT * FROM posts WHERE id=$1`,
       [postId],
@@ -222,32 +223,33 @@ export class PostRepository {
     if (!postRows[0]) throw new NotFoundException('Post not found');
     const post = postRows[0];
 
-    let likesCount = post.likesCount ?? 0;
-    let dislikesCount = post.dislikesCount ?? 0;
-    let newestLikes = post.newestLikes ?? [];
+    // Разбираем актуальный extendedLikesInfo
+    let extendedLikesInfo = post.extendedLikesInfo ?? { likesCount: 0, dislikesCount: 0, newestLikes: [] };
 
+    let { likesCount, dislikesCount, newestLikes } = extendedLikesInfo;
+
+    // Обновляем счётчики за счёт предыдущего статуса
     if (prevStatus === LikeStatus.Like) {
       likesCount--;
       newestLikes = newestLikes.filter((l) => l.userId !== userId);
     }
     if (prevStatus === LikeStatus.Dislike) dislikesCount--;
 
+    // Обновляем счётчики за счёт нового статуса
     if (likeStatus === LikeStatus.Like) {
       likesCount++;
       newestLikes.unshift({ addedAt: new Date(), userId, login: user.login });
-      newestLikes = newestLikes.slice(0, 3);
+      newestLikes = newestLikes.slice(0, 3); // только 3 последних
     }
     if (likeStatus === LikeStatus.Dislike) dislikesCount++;
-    const updatedLikesInfo = {
-      likesCount,
-      dislikesCount,
-      newestLikes,
-    };
+
+    // Сохраняем обновлённую информацию
     await this.dataSource.query(
       `UPDATE posts SET "extendedLikesInfo"=$1 WHERE id=$2`,
-      [JSON.stringify(updatedLikesInfo), postId],
+      [JSON.stringify({ likesCount, dislikesCount, newestLikes }), postId],
     );
 
+    // Работаем с таблицей likes
     if (likeStatus === LikeStatus.None) {
       await this.dataSource.query(
         `DELETE FROM likes WHERE "parentType"='Post' AND "parentId"=$1 AND "authorId"=$2`,
@@ -256,9 +258,10 @@ export class PostRepository {
     } else {
       await this.dataSource.query(
         `
-        INSERT INTO likes ("parentId","parentType","authorId","status","createdAt")
-        VALUES ($1,'Post',$2,$3,$4)
-        ON CONFLICT ("parentId","parentType","authorId") DO UPDATE SET status=$3, "createdAt"=$4
+          INSERT INTO likes ("parentId","parentType","authorId","status","createdAt")
+          VALUES ($1,'Post',$2,$3,$4)
+            ON CONFLICT ("parentId","parentType","authorId") 
+      DO UPDATE SET status=$3, "createdAt"=$4
         `,
         [postId, userId, likeStatus, new Date()],
       );
