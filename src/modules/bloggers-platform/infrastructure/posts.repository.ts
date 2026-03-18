@@ -66,48 +66,62 @@ export class PostRepository {
     const { pageNumber, pageSize, sortBy, sortDirection } = params;
     const offset = (pageNumber - 1) * pageSize;
 
+    // 1️⃣ Считаем общее количество постов
     const totalCountResult = await this.dataSource.query(
       `SELECT COUNT(*) as count FROM posts`,
     );
     const totalCount = parseInt(totalCountResult[0].count, 10);
 
+    // 2️⃣ Берём посты с сортировкой и пагинацией
     const posts = await this.dataSource.query(
       `
-      SELECT * FROM posts
-      ORDER BY "${sortBy}" ${sortDirection.toUpperCase()}
-      OFFSET $1 LIMIT $2
+        SELECT * FROM posts
+        ORDER BY "${sortBy}" ${sortDirection.toUpperCase()}
+        OFFSET $1 LIMIT $2
       `,
       [offset, pageSize],
     );
 
-
+    // 3️⃣ Собираем лайки текущего пользователя
     const userLikesMap = new Map<string, LikeStatus>();
     if (currentUserId) {
       const likes = await this.dataSource.query(
         `SELECT "parentId", status FROM likes WHERE "parentType"='Post' AND "authorId"=$1`,
         [currentUserId],
       );
-      likes.forEach((like) => userLikesMap.set(like.parentId, like.status));
+
+      likes.forEach((like) => {
+        userLikesMap.set(like.parentId.toString(), like.status);
+      });
     }
 
+    // 4️⃣ Формируем объект поста с корректным extendedLikesInfo
     const items = posts.map((post) => {
       const extendedLikesInfoFromDb =
         typeof post.extendedLikesInfo === 'string'
           ? JSON.parse(post.extendedLikesInfo)
           : post.extendedLikesInfo ?? { likesCount: 0, dislikesCount: 0, newestLikes: [] };
-      console.log(post.extendedLikesInfo);
-      console.log('parsed newestLikes:', extendedLikesInfoFromDb.newestLikes);
+
+      // Убедимся, что newestLikes это массив и отсортирован по времени (desc)
+      const newestLikes =
+        Array.isArray(extendedLikesInfoFromDb.newestLikes)
+          ? [...extendedLikesInfoFromDb.newestLikes].sort(
+            (a, b) => new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime(),
+          )
+          : [];
+
       return {
         ...post,
         extendedLikesInfo: {
           likesCount: extendedLikesInfoFromDb.likesCount ?? 0,
           dislikesCount: extendedLikesInfoFromDb.dislikesCount ?? 0,
-          myStatus: userLikesMap.get(post.id) ?? LikeStatus.None,
-          newestLikes: extendedLikesInfoFromDb.newestLikes ?? [],
+          myStatus: currentUserId
+            ? userLikesMap.get(post.id.toString()) ?? LikeStatus.None
+            : LikeStatus.None,
+          newestLikes,
         },
       };
     });
-
 
     return {
       pagesCount: Math.ceil(totalCount / pageSize),
