@@ -111,8 +111,8 @@ export class PostQueryRepository {
       id: comment.id,
       content: comment.content,
       commentatorInfo: {
-        userId: comment.userId,
-        userLogin: comment.userLogin ?? 'Deleted user',
+        userId: comment.commentatorInfo.userId,
+        userLogin: comment.commentatorInfo.userLogin ?? 'Deleted user',
       },
       createdAt: comment.createdAt,
       likesInfo: {
