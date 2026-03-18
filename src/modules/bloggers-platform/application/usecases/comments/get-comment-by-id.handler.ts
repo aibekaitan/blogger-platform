@@ -29,7 +29,7 @@ export class GetCommentByIdHandler implements IQueryHandler<
 
     const comment = await this.commentRepository.findById(commentId);
     if (!comment) return null;
-
+    console.log(comment);
     return this.postQueryRepository._getInViewComment(comment, currentUserId);
   }
 }

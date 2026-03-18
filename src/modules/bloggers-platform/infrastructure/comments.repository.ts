@@ -69,7 +69,7 @@ export class CommentRepository {
     return result.rowCount === 1;
   }
 
-  async findById(id: string): Promise<CommentDB | null> {
+  async findById(id: string) {
     const result = await this.dataSource.query(
       `
       SELECT id,
@@ -92,6 +92,8 @@ export class CommentRepository {
       id: comment.id,
       postId: comment.postId,
       content: comment.content,
+      userId: comment.userId,
+      userLogin: comment.userLogin,
       commentatorInfo: {
         userId: comment.userId,
         userLogin: comment.userLogin,
