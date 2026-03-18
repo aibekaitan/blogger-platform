@@ -121,7 +121,7 @@ export class PostController {
     @CurrentUser() currentUser?: JwtUser | null,
   ): Promise<IPagination<CommentViewModel[]>> {
     const userId = currentUser?.id ?? null;
-
+    console.log(userId);
     const post = await this.queryBus.execute(
       new GetPostByIdQuery(postId, null),
     );

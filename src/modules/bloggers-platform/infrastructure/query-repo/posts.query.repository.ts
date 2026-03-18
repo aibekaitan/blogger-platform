@@ -64,9 +64,7 @@ export class PostQueryRepository {
     );
 
     const items = await Promise.all(
-      comments.map((comment) =>
-        this._getInViewComment(comment, currentUserId),
-      ),
+      comments.map((comment) => this._getInViewComment(comment, currentUserId)),
     );
 
     return {
@@ -106,14 +104,14 @@ export class PostQueryRepository {
 
         currentUserId
           ? this.dataSource.query(
-            `
+              `
               SELECT status FROM likes
               WHERE "parentId" = $1
               AND "parentType" = 'Comment'
               AND "authorId" = $2
               `,
-            [comment.id, currentUserId],
-          )
+              [comment.id, currentUserId],
+            )
           : Promise.resolve([]),
       ]);
 
@@ -121,16 +119,14 @@ export class PostQueryRepository {
     const dislikesCount = Number(dislikesCountResult[0].count);
 
     const myStatus =
-      myLikeResult.length > 0
-        ? myLikeResult[0].status
-        : LikeStatus.None;
+      myLikeResult.length > 0 ? myLikeResult[0].status : LikeStatus.None;
 
     return {
       id: comment.id,
       content: comment.content,
       commentatorInfo: {
-        userId: comment.commentatorInfo.userId,
-        userLogin: comment.commentatorInfo.userLogin ?? 'Deleted user',
+        userId: comment.userId, // ← используй comment.userId
+        userLogin: comment.userLogin ?? 'Deleted user', // ← используй comment.userLogin
       },
       createdAt: comment.createdAt,
       likesInfo: {
