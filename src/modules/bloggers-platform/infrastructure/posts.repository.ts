@@ -27,7 +27,13 @@ export class PostRepository {
     const post = rows[0];
     if (!post) return null;
 
+    // парсим extendedLikesInfo
+    const extendedLikesInfoFromDb =
+      typeof post.extendedLikesInfo === 'string'
+        ? JSON.parse(post.extendedLikesInfo)
+        : post.extendedLikesInfo ?? { likesCount: 0, dislikesCount: 0, newestLikes: [] };
 
+    // определяем мой статус
     let myStatus = LikeStatus.None;
     if (currentUserId) {
       const likeRows = await this.dataSource.query(
@@ -40,10 +46,10 @@ export class PostRepository {
     return {
       ...post,
       extendedLikesInfo: {
-        likesCount: post.likesCount ?? 0,
-        dislikesCount: post.dislikesCount ?? 0,
+        likesCount: extendedLikesInfoFromDb.likesCount ?? 0,
+        dislikesCount: extendedLikesInfoFromDb.dislikesCount ?? 0,
         myStatus,
-        newestLikes: post.newestLikes ?? [],
+        newestLikes: extendedLikesInfoFromDb.newestLikes ?? [],
       },
     };
   }
@@ -84,15 +90,24 @@ export class PostRepository {
       likes.forEach((like) => userLikesMap.set(like.parentId, like.status));
     }
 
-    const items = posts.map((post) => ({
-      ...post,
-      extendedLikesInfo: {
-        likesCount: post.likesCount ?? 0,
-        dislikesCount: post.dislikesCount ?? 0,
-        myStatus: userLikesMap.get(post.id) ?? LikeStatus.None,
-        newestLikes: post.newestLikes ?? [],
-      },
-    }));
+    const items = posts.map((post) => {
+      const extendedLikesInfoFromDb =
+        typeof post.extendedLikesInfo === 'string'
+          ? JSON.parse(post.extendedLikesInfo)
+          : post.extendedLikesInfo ?? { likesCount: 0, dislikesCount: 0, newestLikes: [] };
+      console.log(post.extendedLikesInfo);
+      console.log('parsed newestLikes:', extendedLikesInfoFromDb.newestLikes);
+      return {
+        ...post,
+        extendedLikesInfo: {
+          likesCount: extendedLikesInfoFromDb.likesCount ?? 0,
+          dislikesCount: extendedLikesInfoFromDb.dislikesCount ?? 0,
+          myStatus: userLikesMap.get(post.id) ?? LikeStatus.None,
+          newestLikes: extendedLikesInfoFromDb.newestLikes ?? [],
+        },
+      };
+    });
+
 
     return {
       pagesCount: Math.ceil(totalCount / pageSize),
