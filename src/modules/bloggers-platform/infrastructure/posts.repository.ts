@@ -223,10 +223,14 @@ export class PostRepository {
       newestLikes = newestLikes.slice(0, 3);
     }
     if (likeStatus === LikeStatus.Dislike) dislikesCount++;
-
+    const updatedLikesInfo = {
+      likesCount,
+      dislikesCount,
+      newestLikes,
+    };
     await this.dataSource.query(
-      `UPDATE posts SET "likesCount"=$1, "dislikesCount"=$2, "newestLikes"=$3 WHERE id=$4`,
-      [likesCount, dislikesCount, JSON.stringify(newestLikes), postId],
+      `UPDATE posts SET "extendedLikesInfo"=$1 WHERE id=$2`,
+      [JSON.stringify(updatedLikesInfo), postId],
     );
 
     if (likeStatus === LikeStatus.None) {
