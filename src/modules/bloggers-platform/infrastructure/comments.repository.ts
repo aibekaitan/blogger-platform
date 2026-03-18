@@ -20,7 +20,7 @@ export class CommentRepository {
     dto: CommentInputModel,
     postId: string,
     userId: string,
-  ): Promise<CommentDB> {
+  )/*: Promise<CommentDB>*/ {
     const user = await this.usersRepository.findById(userId);
 
     if (!user) {
@@ -49,6 +49,8 @@ export class CommentRepository {
       id,
       postId,
       content: dto.content.trim(),
+      userId: userId,
+      userLogin: user.login,
       commentatorInfo: {
         userId,
         userLogin: user.login,
