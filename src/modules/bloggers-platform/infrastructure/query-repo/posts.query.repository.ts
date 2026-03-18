@@ -15,33 +15,51 @@ export class PostQueryRepository {
     sortQueryDto: SortQueryFilterType,
     currentUserId?: string | null,
   ): Promise<IPagination<CommentViewModel[]>> {
-    const { sortBy, sortDirection, pageSize, pageNumber } = sortQueryDto;
+    const {
+      sortBy = 'createdAt',
+      sortDirection = 'desc',
+      pageSize = 10,
+      pageNumber = 1,
+    } = sortQueryDto;
+
+    // ✅ направление
+    const direction = sortDirection === 'desc' ? 'DESC' : 'ASC';
+
+    // ✅ whitelist (как у users)
+    const allowedSortFields = ['createdAt', 'content', 'userLogin'];
+
+    const safeSortBy = allowedSortFields.includes(sortBy)
+      ? sortBy
+      : 'createdAt';
 
     const offset = (pageNumber - 1) * pageSize;
 
+    // ✅ COUNT
     const totalCountResult = await this.dataSource.query(
       `
-      SELECT COUNT(*) FROM comments
-      WHERE "postId" = $1
-      `,
+    SELECT COUNT(*) as total
+    FROM comments
+    WHERE "postId" = $1
+    `,
       [postId],
     );
 
-    const totalCount = Number(totalCountResult[0].count);
+    const totalCount = Number(totalCountResult[0]?.total ?? 0);
 
+    // ✅ MAIN QUERY
     const comments = await this.dataSource.query(
       `
-      SELECT 
-        c.id,
-        c.content,
-        c."userId",
-        c."userLogin",
-        c."createdAt"
-      FROM comments c
-      WHERE c."postId" = $1
-      ORDER BY "${sortBy}" ${sortDirection}
-      LIMIT $2 OFFSET $3
-      `,
+    SELECT 
+      c.id,
+      c.content,
+      c."userId",
+      c."userLogin",
+      c."createdAt"
+    FROM comments c
+    WHERE c."postId" = $1
+    ORDER BY c."${safeSortBy}" ${direction}
+    LIMIT $2 OFFSET $3
+    `,
       [postId, pageSize, offset],
     );
 
@@ -52,7 +70,7 @@ export class PostQueryRepository {
     );
 
     return {
-      pagesCount: Math.ceil(totalCount / pageSize),
+      pagesCount: totalCount > 0 ? Math.ceil(totalCount / pageSize) : 0,
       page: pageNumber,
       pageSize,
       totalCount,

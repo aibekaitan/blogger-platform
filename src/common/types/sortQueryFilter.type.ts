@@ -1,7 +1,7 @@
 export type SortQueryFilterType = {
   pageNumber: number;
   pageSize: number;
-  sortDirection: 1 | -1;
+  sortDirection: string;
   sortBy: string;
   searchLoginTerm?: string;
   searchEmailTerm?: string;

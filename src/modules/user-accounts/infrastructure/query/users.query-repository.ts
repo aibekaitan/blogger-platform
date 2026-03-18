@@ -21,8 +21,7 @@ export class UsersQueryRepository {
     } = sortQueryDto;
 
 
-    const direction =
-      sortDirection === -1 || sortDirection === 'desc' ? 'DESC' : 'ASC';
+    const direction = sortDirection === 'desc' ? 'DESC' : 'ASC';
 
 
     const allowedSortFields = ['login', 'email', 'createdAt'];

@@ -24,7 +24,7 @@ export class GetAllUsersHandler implements IQueryHandler<
       pageNumber: Number(q.pageNumber) || 1,
       pageSize: Number(q.pageSize) || 10,
       sortBy: q.sortBy ?? 'createdAt',
-      sortDirection: q.sortDirection === 'asc' ? 1 : -1,
+      sortDirection: q.sortDirection ?? 'desc',
     });
   }
 }
