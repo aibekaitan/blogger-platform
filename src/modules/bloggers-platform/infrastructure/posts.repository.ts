@@ -24,23 +24,39 @@ export class PostRepository {
       `SELECT * FROM posts WHERE id = $1 LIMIT 1`,
       [id],
     );
+
     const post = rows[0];
     if (!post) return null;
 
-    // парсим extendedLikesInfo
+    // ✅ JSONB безопасно
     const extendedLikesInfoFromDb =
       typeof post.extendedLikesInfo === 'string'
         ? JSON.parse(post.extendedLikesInfo)
-        : post.extendedLikesInfo ?? { likesCount: 0, dislikesCount: 0, newestLikes: [] };
+        : post.extendedLikesInfo ?? {
+        likesCount: 0,
+        dislikesCount: 0,
+        newestLikes: [],
+      };
 
-    // определяем мой статус
+    // ✅ дефолт
     let myStatus = LikeStatus.None;
+
     if (currentUserId) {
       const likeRows = await this.dataSource.query(
-        `SELECT status FROM likes WHERE "parentType"='Post' AND "parentId"=$1 AND "authorId"=$2 LIMIT 1`,
-        [id, currentUserId],
+        `
+          SELECT status
+          FROM likes
+          WHERE "parentType"='Post'
+            AND "parentId"=$1
+            AND "authorId"=$2
+            LIMIT 1
+        `,
+        [id.toString(), currentUserId.toString()],
       );
-      if (likeRows[0]) myStatus = likeRows[0].status;
+
+      if (likeRows.length > 0) {
+        myStatus = likeRows[0].status;
+      }
     }
 
     return {
@@ -49,7 +65,9 @@ export class PostRepository {
         likesCount: extendedLikesInfoFromDb.likesCount ?? 0,
         dislikesCount: extendedLikesInfoFromDb.dislikesCount ?? 0,
         myStatus,
-        newestLikes: extendedLikesInfoFromDb.newestLikes ?? [],
+        newestLikes: Array.isArray(extendedLikesInfoFromDb.newestLikes)
+          ? extendedLikesInfoFromDb.newestLikes
+          : [],
       },
     };
   }
