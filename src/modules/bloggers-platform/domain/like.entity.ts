@@ -1,5 +1,4 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Types } from 'mongoose';
+import { Entity, Column, PrimaryGeneratedColumn, Index } from 'typeorm';
 
 export enum LikeStatus {
   None = 'None',
@@ -7,35 +6,29 @@ export enum LikeStatus {
   Dislike = 'Dislike',
 }
 
-@Schema({
-  versionKey: false,
-  timestamps: false,
-})
+@Entity('likes')
+@Index(['authorId', 'parentId', 'parentType'], { unique: true })
 export class Like {
-  _id: Types.ObjectId;
-  @Prop({ type: Date, required: true, default: Date.now })
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
 
-  @Prop({
-    type: String,
-    enum: Object.values(LikeStatus),
-    required: true,
+  @Column({
+    type: 'enum',
+    enum: LikeStatus,
   })
   status: LikeStatus;
 
-  @Prop({ type: String, required: true })
+  @Column({ type: 'uuid' })
   authorId: string;
 
-  @Prop({ type: String, required: true })
+  @Column({ type: 'uuid' })
   parentId: string;
 
-  @Prop({ type: String, default: 'Comment' })
+  @Column({ type: 'varchar', default: 'Comment' })
   parentType: string;
-
-
-  get id(): string {
-    return this._id?.toString();
-  }
 
   static create(dto: {
     authorId: string;
@@ -43,19 +36,13 @@ export class Like {
     status: LikeStatus;
     parentType?: string;
   }): Like {
-    const like = new this();
+    const like = new Like();
+
     like.authorId = dto.authorId;
     like.parentId = dto.parentId;
     like.status = dto.status;
     like.parentType = dto.parentType || 'Comment';
-    like.createdAt = new Date();
+
     return like;
   }
 }
-
-export const LikeSchema = SchemaFactory.createForClass(Like);
-LikeSchema.loadClass(Like);
-
-LikeSchema.index({ authorId: 1, parentId: 1, parentType: 1 }, { unique: true });
-
-export type LikeDocument = HydratedDocument<Like>;

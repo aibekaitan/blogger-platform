@@ -200,7 +200,7 @@ export class CommentRepository {
           "createdAt"
         )
         VALUES ($1,$2,'Comment',$3,$4,$5)
-        ON CONFLICT ("parentId","authorId")
+        ON CONFLICT ("parentId","authorId","parentType")
         DO UPDATE SET
         status = $4,
         "createdAt" = $5

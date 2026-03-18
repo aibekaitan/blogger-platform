@@ -15,7 +15,7 @@ import { BlogsController } from './api/blogs.controller';
 // import { CommentsController } from './api/comments.controller';
 // import { Post, PostSchema } from './domain/post.entity';
 // import { Comment, CommentSchema } from './domain/comment.entity';
-import { Like, LikeSchema } from './domain/like.entity';
+import { Like } from './domain/like.entity';
 import { PostController } from './api/posts.controller';
 import { PostRepository } from './infrastructure/posts.repository';
 import { JwtStrategy } from '../user-accounts/strategies/jwt.service';
@@ -62,7 +62,7 @@ import { DeletePostForBlogHandler } from './application/usecases/blogs/delete-po
     //   { name: Comment.name, schema: CommentSchema },
     //   { name: Like.name, schema: LikeSchema },
     // ]),
-    TypeOrmModule.forFeature([Blog, Post, User, Comment]),
+    TypeOrmModule.forFeature([Blog, Post, User, Comment, Like]),
     UserAccountsModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({
@@ -75,7 +75,8 @@ import { DeletePostForBlogHandler } from './application/usecases/blogs/delete-po
   controllers: [
     BlogsController,
     SaBlogsController,
-    PostController /*CommentsController*/,
+    PostController,
+    CommentsController,
   ],
   providers: [
     // UsersExternalQueryRepository,

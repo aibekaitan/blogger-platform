@@ -25,7 +25,6 @@ import { DeleteCommentCommand } from '../application/usecases/comments/delete-co
 import { UpdateCommentCommand } from '../application/usecases/comments/update-comment.handler';
 import { SetLikeStatusCommand } from '../application/usecases/comments/set-like-status.handler';
 
-
 @NoRateLimit()
 @Controller('comments')
 export class CommentsController {
