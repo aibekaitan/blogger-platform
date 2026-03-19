@@ -133,49 +133,82 @@ export class BlogsRepository {
     const blog = await this.findById(blogId);
     if (!blog) return null;
 
+    const { pageNumber, pageSize, sortBy, sortDirection } = params;
+    const offset = (pageNumber - 1) * pageSize;
+
+    // 1. Общее количество постов в блоге
     const totalCountResult = await this.dataSource.query(
       `SELECT COUNT(*) as count FROM posts WHERE "blogId" = $1`,
       [blogId],
     );
     const totalCount = parseInt(totalCountResult[0].count, 10);
 
-    const offset = (params.pageNumber - 1) * params.pageSize;
-
+    // 2. Получаем сами посты с пагинацией и сортировкой
     const posts = await this.dataSource.query(
       `
-        SELECT *
-        FROM posts
+        SELECT * FROM posts
         WHERE "blogId" = $1
-        ORDER BY "${params.sortBy}" ${params.sortDirection.toUpperCase()}
+        ORDER BY "${sortBy}" ${sortDirection.toUpperCase()}
         OFFSET $2 LIMIT $3
       `,
-      [blogId, offset, params.pageSize],
+      [blogId, offset, pageSize],
     );
 
+    // 3. Лайки текущего пользователя (только для нужных постов)
+    const userLikesMap = new Map<string, string>(); // или LikeStatus, если у вас есть enum
 
-    const userLikesMap = new Map<string, LikeStatus>();
     if (currentUserId) {
-      const likes = await this.dataSource.query(
-        `SELECT "parentId", status FROM likes WHERE "parentType"='Post' AND "authorId"=$1`,
-        [currentUserId],
+      const myLikes = await this.dataSource.query(
+        `
+          SELECT "parentId", status
+          FROM likes
+          WHERE "parentType" = 'Post'
+            AND "authorId" = $1
+            AND "parentId" = ANY($2)
+        `,
+        [currentUserId, posts.map(p => p.id)],
       );
-      likes.forEach((like) => userLikesMap.set(like.parentId, like.status));
+
+      myLikes.forEach((like) => {
+        userLikesMap.set(like.parentId, like.status);
+      });
     }
 
-    const items = posts.map((post) => ({
-      ...post,
-      extendedLikesInfo: {
-        likesCount: post.likesCount ?? 0,
-        dislikesCount: post.dislikesCount ?? 0,
-        myStatus: userLikesMap.get(post.id) ?? LikeStatus.None,
-        newestLikes: post.newestLikes ?? [],
-      },
-    }));
+    // 4. Формируем ответ в стиле findAll
+    const items = posts.map((post) => {
+      // Если в таблице posts есть колонка extendedLikesInfo (jsonb) — используем её
+      // Если нет — считаем на лету (рекомендую второй вариант для консистентности)
+
+      // Вариант А: если extendedLikesInfo хранится в таблице posts (как в findAll)
+      let extendedLikesInfoFromDb =
+        typeof post.extendedLikesInfo === 'string'
+          ? JSON.parse(post.extendedLikesInfo)
+          : post.extendedLikesInfo ?? { likesCount: 0, dislikesCount: 0, newestLikes: [] };
+
+      // Сортируем newestLikes по убыванию даты (если они уже есть)
+      const newestLikes = Array.isArray(extendedLikesInfoFromDb.newestLikes)
+        ? [...extendedLikesInfoFromDb.newestLikes].sort(
+          (a, b) => new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime(),
+        ).slice(0, 3) // на всякий случай обрезаем до 3
+        : [];
+
+      return {
+        ...post,
+        extendedLikesInfo: {
+          likesCount: extendedLikesInfoFromDb.likesCount ?? 0,
+          dislikesCount: extendedLikesInfoFromDb.dislikesCount ?? 0,
+          myStatus: currentUserId
+            ? userLikesMap.get(post.id) ?? 'None'   // или LikeStatus.None
+            : 'None',
+          newestLikes,
+        },
+      };
+    });
 
     return {
-      pagesCount: Math.ceil(totalCount / params.pageSize),
-      page: params.pageNumber,
-      pageSize: params.pageSize,
+      pagesCount: Math.ceil(totalCount / pageSize),
+      page: pageNumber,
+      pageSize,
       totalCount,
       items: items.map(mapPostToView),
     };
