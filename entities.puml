@@ -1,0 +1,83 @@
+@startuml
+!theme plain
+skinparam linetype ortho
+
+' Entities
+entity "Blog" as Blog {
+  * id : uuid <<PK>>
+  --
+  name : varchar(255)
+  description : varchar(1000)
+  websiteUrl : varchar(255)
+  createdAt : timestamp
+  isMembership : boolean
+}
+
+entity "Post" as Post {
+  * id : uuid <<PK>>
+  --
+  blogId : uuid <<FK>>
+  title : varchar(255)
+  shortDescription : varchar(500)
+  content : text
+  blogName : varchar(255)
+  createdAt : timestamp
+  extendedLikesInfo : jsonb
+}
+
+entity "Comment" as Comment {
+  * id : uuid <<PK>>
+  --
+  postId : uuid <<FK>>
+  userId : uuid <<FK>>
+  content : text
+  userLogin : varchar(255)
+  createdAt : timestamp
+}
+
+entity "User" as User {
+  * id : uuid <<PK>>
+  --
+  login : varchar(30)
+  email : varchar(255)
+  passwordHash : varchar(255)
+  createdAt : timestamp
+  refreshToken : varchar(500)
+  passwordRecoveryCode : varchar(36)
+  emailConfirmation : jsonb
+}
+
+entity "Like" as Like {
+  * id : uuid <<PK>>
+  --
+  authorId : uuid <<FK>>
+  parentId : uuid <<FK>>
+  status : enum (Like, Dislike, None)
+  parentType : varchar (Post, Comment)
+  createdAt : timestamp
+}
+
+entity "Device" as Device {
+  * id : uuid <<PK>>
+  --
+  userId : uuid <<FK>>
+  deviceId : string
+  ip : string
+  title : string
+  lastActiveDate : timestamptz
+  expirationDate : timestamptz
+  refreshToken : text
+}
+
+' Relationships (One-to-Many)
+Blog "1" --o{ Post : "one blog to many posts"
+Post "1" --o{ Comment : "one post to many comments"
+User "1" --o{ Comment : "one user to many comments"
+User "1" --o{ Like : "one user to many likes"
+User "1" --o{ Device : "one user to many devices"
+
+' Logical/Polymorphic Relationships for Likes
+Post "1" ..o{ Like : "logical parent (parentId)"
+Comment "1" ..o{ Like : "logical parent (parentId)"
+
+@enduml

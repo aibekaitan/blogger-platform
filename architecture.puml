@@ -1,0 +1,95 @@
+@startuml BloggerPlatformArchitecture
+
+!theme plain
+skinparam componentStyle uml2
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+package "AppModule" {
+    [AppController]
+    [AppService]
+}
+
+package "UserAccountsModule" #FEFECE {
+    package "API Layer (Users)" {
+        [UsersController]
+        [AuthController]
+        [SecurityDevicesController]
+    }
+    
+    package "Application Layer (Users)" {
+        [CreateUserUseCase]
+        [LoginUserUseCase]
+        [RegisterUserUseCase]
+        [...Other User Handlers...]
+    }
+    
+    package "Infrastructure Layer (Users)" {
+        [UsersRepository]
+        [UsersQueryRepository]
+        [DevicesRepository]
+    }
+    
+    package "Domain Layer (Users)" {
+        entity User
+        entity Device
+    }
+}
+
+package "BloggersPlatformModule" #E1F5FE {
+    package "API Layer (Blogs)" {
+        [BlogsController]
+        [PostsController]
+        [CommentsController]
+        [SaBlogsController]
+    }
+    
+    package "Application Layer (Blogs)" {
+        [CreateBlogHandler]
+        [CreatePostForBlogHandler]
+        [UpdateBlogHandler]
+        [...Other Blog Handlers...]
+    }
+    
+    package "Infrastructure Layer (Blogs)" {
+        [BlogsRepository]
+        [PostsRepository]
+        [CommentsRepository]
+        [PostQueryRepository]
+    }
+    
+    package "Domain Layer (Blogs)" {
+        entity Blog
+        entity Post
+        entity Comment
+        entity Like
+    }
+}
+
+package "CoreModule" #F5F5F5 {
+    [BaseQueryParams]
+    [ErrorUtils]
+}
+
+package "Common" #F5F5F5 {
+    [Guards/Decorators]
+}
+
+' Connections
+[AppModule] --> [UserAccountsModule]
+[AppModule] --> [BloggersPlatformModule]
+[AppModule] --> [CoreModule]
+[BloggersPlatformModule] ..> [UserAccountsModule] : uses Guards/Types
+
+' CQRS Flow example
+[BlogsController] --> [CommandBus] : executes
+[BlogsController] --> [QueryBus] : executes
+[CommandBus] --> [CreateBlogHandler] : routes to
+[QueryBus] --> [GetAllBlogsQuery] : routes to
+
+' Data Flow
+[CreateBlogHandler] --> [BlogsRepository]
+[BlogsRepository] --> Blog : manages
+[GetAllBlogsQuery] --> [PostQueryRepository]
+
+@enduml
