@@ -36,7 +36,7 @@ import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { CurrentDeviceId } from '../../../common/decorators/current-device-id.decorator';
 import { LogoutCommand } from '../application/usecases/auth/logout-user.use-case';
 import { JwtService } from '@nestjs/jwt';
-import { appConfig } from '../../../common/config/config';
+
 import { SkipThrottle, Throttle } from '@nestjs/throttler';
 
 @Controller('auth')

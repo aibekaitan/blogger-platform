@@ -1,22 +1,25 @@
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
 import { appSetup } from './setup/app.setup';
 import {
   BadRequestException,
   ValidationError,
   ValidationPipe,
 } from '@nestjs/common';
-import * as dotenv from 'dotenv';
-import { Error } from 'mongoose';
 import cookieParser from 'cookie-parser';
-
-// import { RequestLoggerAndLimiterMiddleware } from './modules/user-accounts/adapters/request-logger-limiter.middleware';
-
-dotenv.config();
+import { initAppModule } from './init-app-module';
+import { CoreConfig } from './core/core.config';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  // 1. Инициализируем динамический модуль (загрузка конфигов и валидация)
+  const DynamicAppModule = await initAppModule();
 
+  // 2. Создаем приложение на основе динамического модуля
+  const app = await NestFactory.create(DynamicAppModule);
+
+  // 3. Получаем CoreConfig из контекста приложения
+  const coreConfig = app.get<CoreConfig>(CoreConfig);
+
+  // 4. Настраиваем пайпы, куки и прочее
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -24,11 +27,6 @@ async function bootstrap() {
       transform: true,
       stopAtFirstError: false,
       exceptionFactory: (validationErrors: ValidationError[] = []) => {
-        console.log(
-          'ValidationPipe triggered! Raw errors:',
-          JSON.stringify(validationErrors, null, 2),
-        );
-
         const errors = validationErrors.map((error) => {
           const firstConstraint = Object.values(error.constraints || {})[0];
           return {
@@ -37,24 +35,23 @@ async function bootstrap() {
           };
         });
 
-        console.log('Formatted errors:', errors);
-
         return new BadRequestException({
           errorsMessages: errors,
         });
       },
     }),
   );
+
   appSetup(app);
-  // const loggerMiddleware = app.get(RequestLoggerAndLimiterMiddleware);
-  //
-  //
-  // app.use(loggerMiddleware.use.bind(loggerMiddleware));
   app.use(cookieParser());
-  const PORT = process.env.PORT || 5005; //TODO: move to configService. will be in the following lessons
+
+  // 5. Запускаем сервер на порту из конфига
+  const PORT = coreConfig.port;
 
   await app.listen(PORT, () => {
     console.log('Server is running on port ' + PORT);
+    console.log('Environment: ' + coreConfig.env);
   });
 }
+
 bootstrap();

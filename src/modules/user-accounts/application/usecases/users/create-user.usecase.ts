@@ -5,6 +5,7 @@ import { UsersQueryRepository } from '../../../infrastructure/query/users.query-
 import { UserInputDto } from '../../../api/input-dto/users.input.dto';
 import { IUserView } from '../../../types/user.view.interface';
 import { UsersRepository } from '../../../infrastructure/users.repository';
+import { User } from '../../../domain/user.entity';
 
 export class CreateUserCommand extends Command<IUserView> {
   constructor(public readonly dto: UserInputDto) {
@@ -28,13 +29,14 @@ export class CreateUserUseCase implements ICommandHandler<
 
     const passwordHash = await this.bcryptService.generateHash(dto.password);
 
-    const newUser = {
-      id: uuidv4(),
-      login: dto.login,
-      email: dto.email,
-      passwordHash,
-      createdAt: new Date(),
-    };
+    const newUser = User.create(
+      {
+        login: dto.login,
+        email: dto.email,
+        passwordHash,
+      },
+      true,
+    );
 
     const createdUserId = await this.usersRepository.create(newUser);
 

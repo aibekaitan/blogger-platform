@@ -60,10 +60,6 @@ export class RegisterUserUseCase implements ICommandHandler<
 
     await this.usersRepository.create(newUser);
 
-    await this.nodemailerService.sendEmail(
-      email,
-      confirmationCode,
-      emailExamples.registrationEmail,
-    );
+    await this.nodemailerService.sendEmail(newUser.email, newUser.emailConfirmation.confirmationCode);
   }
 }

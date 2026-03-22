@@ -1,20 +1,13 @@
 import { Module } from '@nestjs/common';
 import { UsersController } from './api/users.controller';
-import { MongooseModule } from '@nestjs/mongoose';
 import { UsersQueryRepository } from './infrastructure/query/users.query-repository';
 import { BcryptService } from './adapters/bcrypt.service';
 import { AuthController } from './api/auth.controller';
 import { SecurityDevicesController } from './api/security-devices.controller';
 import { PassportModule } from '@nestjs/passport';
-import { JwtModule } from '@nestjs/jwt';
-import { appConfig } from '../../common/config/config';
+import { JwtModule, JwtService } from '@nestjs/jwt';
 import { JwtStrategy } from './strategies/jwt.service';
-// import { AuthService } from './application/auth.service';
 import { NodemailerService } from './adapters/nodemailer.service';
-import { RequestLog, RequestLogSchema } from './domain/request-log.schema';
-// import { RateLimiterInterceptor } from './adapters/request-logger-limiter.middleware';
-import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
-import { BasicAuthGuard } from './api/guards/basic-auth.guard';
 import { CqrsModule } from '@nestjs/cqrs';
 import { CreateUserUseCase } from './application/usecases/users/create-user.usecase';
 import { DeleteUserUseCase } from './application/usecases/users/delete-user.usecase';
@@ -32,55 +25,50 @@ import { TerminateDeviceHandler } from './application/usecases/security-devices/
 import { GetAllDevicesHandler } from './application/usecases/security-devices/get-all-devices.query';
 import { DevicesRepository } from './infrastructure/security-devices/security-devices.repository';
 import { SecurityDevicesQueryRepository } from './infrastructure/query/security-devices.query.repository';
-// import { Device, DeviceSchema } from './domain/device.model';
 import { RefreshTokenGuard } from './api/guards/refresh-token.guard';
 import { LogoutUseCase } from './application/usecases/auth/logout-user.use-case';
 import { UsersRepository } from './infrastructure/users.repository';
-import { ThrottlerGuard } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Device } from './domain/device.model';
 import { User } from './domain/user.entity';
-// import { UsersRepository } from './infrastructure/users.repository.old';
-// import { User } from './domain/user.entity.old';
-// import { RequestLoggerAndLimiterMiddleware } from './adapters/request-logger-limiter.middleware';
+import { UserAccountsConfigModule } from './config/user-accounts-config.module';
+import { UserAccountsConfig } from './config/user-accounts.config';
+import { BasicAuthGuard } from './api/guards/basic-auth.guard';
+
+import {
+  ACCESS_TOKEN_STRATEGY_INJECT_TOKEN,
+  REFRESH_TOKEN_STRATEGY_INJECT_TOKEN,
+} from './constants';
 
 @Module({
   imports: [
-    // MongooseModule.forFeature([{ name: Device.name, schema: DeviceSchema }]),
-    // MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
-    // MongooseModule.forFeature([
-    //   { name: RequestLog.name, schema: RequestLogSchema },
-    // ]),
     TypeOrmModule.forFeature([Device, User]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
-    JwtModule.register({
-      secret: appConfig.AC_SECRET,
-      signOptions: { expiresIn: Number(appConfig.AC_TIME) },
+    UserAccountsConfigModule,
+    JwtModule.registerAsync({
+      imports: [UserAccountsConfigModule],
+      useFactory: (config: UserAccountsConfig) => ({
+        secret: config.accessTokenSecret,
+        signOptions: { expiresIn: config.accessTokenExpireIn as any },
+      }),
+      inject: [UserAccountsConfig],
     }),
     CqrsModule,
   ],
   controllers: [UsersController, AuthController, SecurityDevicesController],
   providers: [
-    // {
-    //   provide: APP_GUARD,
-    //   useClass: ThrottlerGuard,
-    // },
-    // AuthService,
     UsersRepository,
     UsersQueryRepository,
     JwtStrategy,
-    // SecurityDevicesQueryRepository,
-    // AuthQueryRepository,
     BcryptService,
     NodemailerService,
     BasicAuthGuard,
     RefreshTokenGuard,
 
+    // Use Cases
     CreateUserUseCase,
     DeleteUserUseCase,
-    // UpdateUserUseCase,
     GetAllUsersHandler,
-    // RequestLoggerAndLimiterMiddleware,
     LoginUserUseCase,
     RegisterUserUseCase,
     ConfirmEmailUseCase,
@@ -91,14 +79,40 @@ import { User } from './domain/user.entity';
     GetMeHandler,
     LogoutUseCase,
 
-    // Queries
+    // Devices logic
     GetAllDevicesHandler,
     TerminateAllExceptCurrentHandler,
     TerminateDeviceHandler,
-    // Commands
-
     DevicesRepository,
     SecurityDevicesQueryRepository,
+
+    // Настройка токенов доступа (Access Token)
+    {
+      provide: ACCESS_TOKEN_STRATEGY_INJECT_TOKEN,
+      useFactory: (config: UserAccountsConfig): JwtService => {
+        return new JwtService({
+          secret: config.accessTokenSecret,
+          signOptions: { expiresIn: config.accessTokenExpireIn as any },
+        });
+      },
+      inject: [UserAccountsConfig],
+    },
+    // Настройка токенов обновления (Refresh Token)
+    {
+      provide: REFRESH_TOKEN_STRATEGY_INJECT_TOKEN,
+      useFactory: (config: UserAccountsConfig): JwtService => {
+        return new JwtService({
+          secret: config.refreshTokenSecret,
+          signOptions: { expiresIn: config.refreshTokenExpireIn as any },
+        });
+      },
+      inject: [UserAccountsConfig],
+    },
+  ],
+  exports: [
+    UserAccountsConfigModule,
+    ACCESS_TOKEN_STRATEGY_INJECT_TOKEN,
+    REFRESH_TOKEN_STRATEGY_INJECT_TOKEN,
   ],
 })
 export class UserAccountsModule {}

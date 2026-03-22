@@ -51,25 +51,28 @@ export class User {
   @Column({ type: 'jsonb', nullable: false })
   emailConfirmation: EmailConfirmation;
 
-
-
-  static create(dto: {
-    login: string;
-    email: string;
-    passwordHash: string;
-    confirmationCode: string;
-    expirationDate: Date;
-  }): User {
+  static create(
+    dto: {
+      login: string;
+      email: string;
+      passwordHash: string;
+      confirmationCode?: string;
+      expirationDate?: Date;
+    },
+    isConfirmed = false,
+  ): User {
     const user = new User();
 
     user.login = dto.login.trim();
     user.email = dto.email.trim().toLowerCase();
     user.passwordHash = dto.passwordHash;
+    user.createdAt = new Date();
+    user.passwordRecoveryCode = randomUUID();
 
     user.emailConfirmation = {
-      confirmationCode: dto.confirmationCode,
-      expirationDate: dto.expirationDate,
-      isConfirmed: false,
+      confirmationCode: dto.confirmationCode || randomUUID(),
+      expirationDate: dto.expirationDate || new Date(),
+      isConfirmed: isConfirmed,
     };
 
     return user;

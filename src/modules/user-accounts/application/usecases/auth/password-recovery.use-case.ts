@@ -35,8 +35,6 @@ export class PasswordRecoveryUseCase implements ICommandHandler<
       recoveryCode,
     );
 
-    await this.nodemailerService
-      .sendEmail(email, recoveryCode, emailExamples.passwordRecoveryEmail)
-      .catch((err) => console.error('Recovery email error:', err));
+    await this.nodemailerService.sendPasswordRecoveryEmail(email, recoveryCode);
   }
 }

@@ -84,28 +84,19 @@ export class UsersRepository {
     return rows[0] ?? null;
   }
 
-  async create(userData: {
-    login: string;
-    email: string;
-    passwordHash: string;
-  }): Promise<string> {
-    const emailConfirmation = {
-      confirmationCode: crypto.randomUUID(),
-      expirationDate: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
-      isConfirmed: false,
-    };
-
+  async create(user: User): Promise<string> {
     const rows = await this.dataSource.query(
-      `INSERT INTO users
-      (login, email, "passwordHash", "createdAt", "emailConfirmation", "passwordRecoveryCode")
-      VALUES ($1, $2, $3, NOW(), $4::jsonb, $5)
+      `INSERT INTO users 
+      (login, email, "passwordHash", "createdAt", "emailConfirmation", "passwordRecoveryCode") 
+      VALUES ($1, $2, $3, $4, $5::jsonb, $6) 
       RETURNING id`,
       [
-        userData.login.trim(),
-        userData.email.trim().toLowerCase(),
-        userData.passwordHash,
-        JSON.stringify(emailConfirmation),
-        crypto.randomUUID(),
+        user.login,
+        user.email,
+        user.passwordHash,
+        user.createdAt || new Date(),
+        JSON.stringify(user.emailConfirmation),
+        user.passwordRecoveryCode || crypto.randomUUID(),
       ],
     );
 

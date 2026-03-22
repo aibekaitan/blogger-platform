@@ -1,35 +1,52 @@
+import { Injectable } from '@nestjs/common';
 import nodemailer from 'nodemailer';
-import { injectable } from 'inversify';
-import { appConfig } from '../../../common/config/config';
+import { UserAccountsConfig } from '../config/user-accounts.config';
 
-@injectable()
+@Injectable()
 export class NodemailerService {
-  constructor() {}
-  async sendEmail(
-    email: string,
-    code: string,
-    template: (code: string) => string,
-  ): Promise<boolean> {
-    let transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 465,
-      secure: true, // true для 465
+  constructor(private userAccountsConfig: UserAccountsConfig) {}
+
+  async sendEmail(email: string, code: string) {
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
       auth: {
-        user: appConfig.EMAIL,
-        pass: appConfig.EMAIL_PASS,
+        user: this.userAccountsConfig.email,
+        pass: this.userAccountsConfig.emailPass,
       },
     });
 
-    let info = await transporter.sendMail({
-      from: {
-        name: 'Kek 👻',
-        address: appConfig.EMAIL,
-      },
+    const info = await transporter.sendMail({
+      from: `"Blogger Platform" <${this.userAccountsConfig.email}>`,
       to: email,
-      subject: 'Your code is here',
-      html: template(code), // html body
+      subject: 'Registration Confirmation',
+      html: `<h1>Thank you for registration</h1>
+             <p>To finish registration please follow the link below:
+                <a href='https://some-frontend.com/confirm-registration?code=${code}'>complete registration</a>
+             </p>`,
     });
 
-    return !!info;
+    return info;
+  }
+
+  async sendPasswordRecoveryEmail(email: string, code: string) {
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: this.userAccountsConfig.email,
+        pass: this.userAccountsConfig.emailPass,
+      },
+    });
+
+    const info = await transporter.sendMail({
+      from: `"Blogger Platform" <${this.userAccountsConfig.email}>`,
+      to: email,
+      subject: 'Password Recovery',
+      html: `<h1>Password recovery</h1>
+             <p>To finish password recovery please follow the link below:
+                <a href='https://some-frontend.com/password-recovery?code=${code}'>recovery password</a>
+             </p>`,
+    });
+
+    return info;
   }
 }

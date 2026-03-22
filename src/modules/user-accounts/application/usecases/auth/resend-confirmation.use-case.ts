@@ -53,7 +53,7 @@ export class ResendConfirmationUseCase implements ICommandHandler<
 
     // 5. Отправляем письмо (не бросаем ошибку, если упадёт — пользователь уже получил код)
     this.nodemailerService
-      .sendEmail(email, newCode, emailExamples.registrationEmail)
+      .sendEmail(email, newCode)
       .catch((err) => {
         console.error('Resend confirmation email failed:', err);
         // Можно добавить метрику / лог в sentry / elk, но не прерывать use-case

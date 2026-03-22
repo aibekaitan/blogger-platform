@@ -12,43 +12,32 @@ export enum Environments {
 
 @Injectable()
 export class CoreConfig {
-  @IsEnum(Environments, {
-    message:
-      'Set correct NODE_ENV value, available values: ' +
-      configValidationUtility.getEnumValues(Environments).join(', '),
-  })
-  env: string = this.configService.get('NODE_ENV') || Environments.DEVELOPMENT;
+  @IsEnum(Environments)
+  env: string;
 
-  @IsNumber(
-    {},
-    {
-      message: 'Set Env variable PORT, example: 3000',
-    },
-  )
-  port: number = Number(this.configService.get('PORT')) || 5005;
+  @IsNumber()
+  port: number;
 
-  @IsNotEmpty({
-    message: 'Set Env variable DATABASE_URL for PostgreSQL connection',
-  })
-  databaseUrl: string = this.configService.get('DATABASE_URL');
+  @IsNotEmpty()
+  databaseUrl: string;
 
-  @IsBoolean({
-    message: 'Set Env variable IS_SWAGGER_ENABLED (true/false)',
-  })
-  isSwaggerEnabled: boolean =
-    configValidationUtility.convertToBoolean(
+  @IsBoolean()
+  isSwaggerEnabled: boolean;
+
+  @IsBoolean()
+  includeTestingModule: boolean;
+
+  constructor(private configService: ConfigService<any, true>) {
+    this.env = this.configService.get('NODE_ENV') || Environments.DEVELOPMENT;
+    this.port = Number(this.configService.get('PORT')) || 5005;
+    this.databaseUrl = this.configService.get('DATABASE_URL');
+    this.isSwaggerEnabled = configValidationUtility.convertToBoolean(
       this.configService.get('IS_SWAGGER_ENABLED'),
     ) ?? true;
-
-  @IsBoolean({
-    message: 'Set Env variable INCLUDE_TESTING_MODULE (true/false)',
-  })
-  includeTestingModule: boolean =
-    configValidationUtility.convertToBoolean(
+    this.includeTestingModule = configValidationUtility.convertToBoolean(
       this.configService.get('INCLUDE_TESTING_MODULE'),
     ) ?? false;
 
-  constructor(private configService: ConfigService<any, true>) {
     configValidationUtility.validateConfig(this);
   }
 }

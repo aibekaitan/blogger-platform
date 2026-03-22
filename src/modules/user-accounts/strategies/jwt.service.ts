@@ -1,28 +1,19 @@
-// jwt.strategy.ts
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { appConfig } from '../../../common/config/config';
+import { PassportStrategy } from '@nestjs/passport';
+import { Injectable } from '@nestjs/common';
+import { UserAccountsConfig } from '../config/user-accounts.config';
 
 @Injectable()
-export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
-  constructor() {
+export class JwtStrategy extends PassportStrategy(Strategy) {
+  constructor(private userAccountsConfig: UserAccountsConfig) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: appConfig.AC_SECRET,
+      secretOrKey: userAccountsConfig.accessTokenSecret,
     });
   }
 
   async validate(payload: any) {
-    if (!payload.userId) {
-      throw new UnauthorizedException('Invalid token payload: userId missing');
-    }
-
-    return {
-      id: payload.userId,
-      login: payload.login || 'Unknown',
-      deviceId: payload.deviceId || null,
-    };
+    return { userId: payload.userId };
   }
 }

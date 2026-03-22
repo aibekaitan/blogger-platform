@@ -5,28 +5,37 @@ import { configValidationUtility } from '../../../setup/config-validation.utilit
 
 @Injectable()
 export class UserAccountsConfig {
-  @IsNotEmpty({ message: 'Set Env variable AC_SECRET' })
   @IsString()
-  accessTokenSecret: string = this.configService.get('AC_SECRET');
+  @IsNotEmpty()
+  accessTokenSecret: string;
 
-  @IsNotEmpty({ message: 'Set Env variable AC_TIME (e.g. 1h, 5m)' })
-  accessTokenExpireIn: string = this.configService.get('AC_TIME');
-
-  @IsNotEmpty({ message: 'Set Env variable RT_SECRET' })
   @IsString()
-  refreshTokenSecret: string = this.configService.get('RT_SECRET');
+  @IsNotEmpty()
+  accessTokenExpireIn: string;
 
-  @IsNotEmpty({ message: 'Set Env variable RT_TIME (e.g. 7d, 24h)' })
-  refreshTokenExpireIn: string = this.configService.get('RT_TIME');
-
-  @IsEmail({}, { message: 'Set correct EMAIL variable' })
-  email: string = this.configService.get('EMAIL');
-
-  @IsNotEmpty({ message: 'Set Env variable EMAIL_PASS' })
   @IsString()
-  emailPass: string = this.configService.get('EMAIL_PASS');
+  @IsNotEmpty()
+  refreshTokenSecret: string;
+
+  @IsString()
+  @IsNotEmpty()
+  refreshTokenExpireIn: string;
+
+  @IsEmail()
+  email: string;
+
+  @IsString()
+  @IsNotEmpty()
+  emailPass: string;
 
   constructor(private configService: ConfigService<any, true>) {
+    this.accessTokenSecret = this.configService.get('AC_SECRET');
+    this.accessTokenExpireIn = this.configService.get('AC_TIME');
+    this.refreshTokenSecret = this.configService.get('RT_SECRET');
+    this.refreshTokenExpireIn = this.configService.get('RT_TIME');
+    this.email = this.configService.get('EMAIL');
+    this.emailPass = this.configService.get('EMAIL_PASS');
+
     configValidationUtility.validateConfig(this);
   }
 }

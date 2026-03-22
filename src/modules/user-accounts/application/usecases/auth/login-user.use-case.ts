@@ -1,12 +1,11 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { UnauthorizedException } from '@nestjs/common';
+import { UnauthorizedException, Inject } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
-
 import { Command } from '@nestjs/cqrs';
 import { UsersRepository } from '../../../infrastructure/users.repository';
 import { BcryptService } from '../../../adapters/bcrypt.service';
 import { DevicesRepository } from '../../../infrastructure/security-devices/security-devices.repository';
+import { ACCESS_TOKEN_STRATEGY_INJECT_TOKEN, REFRESH_TOKEN_STRATEGY_INJECT_TOKEN } from '../../../constants';
 
 export class LoginUserCommand extends Command<{
   accessToken: string;
@@ -21,14 +20,17 @@ export class LoginUserCommand extends Command<{
     super();
   }
 }
+
 @CommandHandler(LoginUserCommand)
 export class LoginUserUseCase implements ICommandHandler<
   LoginUserCommand,
   { accessToken: string; refreshToken: string }
 > {
   constructor(
-    private readonly jwtService: JwtService,
-    private readonly configService: ConfigService,
+    @Inject(ACCESS_TOKEN_STRATEGY_INJECT_TOKEN)
+    private readonly accessTokenService: JwtService,
+    @Inject(REFRESH_TOKEN_STRATEGY_INJECT_TOKEN)
+    private readonly refreshTokenService: JwtService,
     private readonly usersRepository: UsersRepository,
     private readonly bcryptService: BcryptService,
     private readonly devicesRepository: DevicesRepository,
@@ -50,22 +52,10 @@ export class LoginUserUseCase implements ICommandHandler<
 
     const userId = user.id.toString();
     const login = user.login;
-    const payload = { userId, login };
-    const accessToken = this.jwtService.sign(payload, {
-      secret: this.configService.getOrThrow('AC_SECRET'),
-      expiresIn: this.configService.getOrThrow('AC_TIME'),
-    });
-
     const deviceId = crypto.randomUUID();
 
-
-    const refreshPayload = { userId, login, deviceId };
-
-    const refreshToken = this.jwtService.sign(refreshPayload, {
-      secret: this.configService.getOrThrow('RT_SECRET'),
-      // expiresIn: '259200033',
-      expiresIn: this.configService.getOrThrow('RT_TIME'),
-    });
+    const accessToken = this.accessTokenService.sign({ userId, login });
+    const refreshToken = this.refreshTokenService.sign({ userId, login, deviceId });
 
     await this.devicesRepository.upsertDevice({
       userId,
@@ -74,7 +64,7 @@ export class LoginUserUseCase implements ICommandHandler<
       title: command.title,
       lastActiveDate: new Date(),
       refreshToken,
-      expirationDate: new Date(Date.now() + 2592000),
+      expirationDate: new Date(Date.now() + 2592000), // Здесь можно тоже вытащить из конфига при желании
     });
 
     return { accessToken, refreshToken };
