@@ -45,14 +45,16 @@ import {
     TypeOrmModule.forFeature([Device, User]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     UserAccountsConfigModule,
-    JwtModule.registerAsync({
-      imports: [UserAccountsConfigModule],
-      useFactory: (config: UserAccountsConfig) => ({
-        secret: config.accessTokenSecret,
-        signOptions: { expiresIn: config.accessTokenExpireIn as any },
-      }),
-      inject: [UserAccountsConfig],
-    }),
+    // JwtModule.registerAsync({
+    //   imports: [UserAccountsConfigModule],
+    //   useFactory: (config: UserAccountsConfig) => ({
+    //     secret: config.accessTokenSecret,
+    //     signOptions: { expiresIn: config.accessTokenExpireIn as any },
+    //   }),
+    //   inject: [UserAccountsConfig],
+    // }), это лишнее, потому что он создает экземпляр jwtService
+    // тем самым дает возможность другим классом использовать его за счет DI
+    // У нас уже создаеться service путем декортаора который создает этот сервис, получаеться два Варианта Релизации
     CqrsModule,
   ],
   controllers: [UsersController, AuthController, SecurityDevicesController],

@@ -12,15 +12,17 @@ import { CoreConfig } from './core/core.config';
 @Module({
   imports: [
     configModule,
-    CoreModule,
+    CoreModule, //запускает конфиг вообще везде за счет @Global
     TypeOrmModule.forRootAsync({
       useFactory: (coreConfig: CoreConfig) => {
         return {
           type: 'postgres' as const,
+          //запуск нашего бд
           url: coreConfig.databaseUrl,
           autoLoadEntities: true,
-          synchronize: true, // Будьте осторожны в продакшене
-          logging: coreConfig.env === 'development' ? ['query', 'error'] : ['error'],
+          synchronize: true, // Надо быть осторожным в продакшене
+          logging:
+            coreConfig.env === 'development' ? ['query', 'error'] : ['error'],
           ssl: true,
           extra: {
             ssl: {

@@ -35,7 +35,6 @@ import { RefreshTokenGuard } from './guards/refresh-token.guard';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { CurrentDeviceId } from '../../../common/decorators/current-device-id.decorator';
 import { LogoutCommand } from '../application/usecases/auth/logout-user.use-case';
-import { JwtService } from '@nestjs/jwt';
 
 import { SkipThrottle, Throttle } from '@nestjs/throttler';
 
@@ -44,7 +43,6 @@ export class AuthController {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
-    private readonly jwtService: JwtService,
   ) {}
 
   @Post('login')
@@ -102,8 +100,6 @@ export class AuthController {
         registrationDto.email,
       ),
     );
-
-
   }
 
   @Post('registration-confirmation')
@@ -190,7 +186,5 @@ export class AuthController {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
     });
-
-
   }
 }

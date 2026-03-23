@@ -4,17 +4,18 @@ import {
   Injectable,
   UnauthorizedException,
   ExecutionContext,
+  Inject,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
 import { DevicesRepository } from '../../infrastructure/security-devices/security-devices.repository';
+import { REFRESH_TOKEN_STRATEGY_INJECT_TOKEN } from '../../constants';
 
 @Injectable()
 export class RefreshTokenGuard extends AuthGuard('jwt') {
   constructor(
+    @Inject(REFRESH_TOKEN_STRATEGY_INJECT_TOKEN)
     private readonly jwtService: JwtService,
-    private readonly configService: ConfigService,
     private readonly devicesRepo: DevicesRepository,
   ) {
     super();
@@ -24,18 +25,13 @@ export class RefreshTokenGuard extends AuthGuard('jwt') {
     const request = context.switchToHttp().getRequest();
     const refreshToken = request.cookies?.refreshToken;
 
-    const rtSecret = this.configService.get<string>('RT_SECRET');
-
     if (!refreshToken) {
       throw new UnauthorizedException('Refresh token not found in cookie');
     }
 
     let payload: any;
     try {
-      payload = await this.jwtService.verifyAsync(refreshToken, {
-        secret: rtSecret,
-        ignoreExpiration: false,
-      });
+      payload = await this.jwtService.verifyAsync(refreshToken);
     } catch (e) {
       throw new UnauthorizedException(
         `Refresh token validation failed: ${e.message}`,
