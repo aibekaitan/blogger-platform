@@ -41,14 +41,11 @@ import { Comment } from './domain/comment.entity';
 import { SaBlogsController } from './api/sa.blogs.controller';
 import { UpdatePostForBlogHandler } from './application/usecases/blogs/update-post-for-blog.handler';
 import { DeletePostForBlogHandler } from './application/usecases/blogs/delete-post-for-blog.handler';
-import { UserAccountsConfigModule } from '../user-accounts/config/user-accounts-config.module';
-import { UserAccountsConfig } from '../user-accounts/config/user-accounts.config';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Blog, Post, User, Comment, Like]),
     UserAccountsModule,
-    UserAccountsConfigModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     // JwtModule.registerAsync({
     //   imports: [UserAccountsConfigModule],
@@ -74,7 +71,7 @@ import { UserAccountsConfig } from '../user-accounts/config/user-accounts.config
     PostQueryRepository,
     CommentRepository,
     PostRepository,
-    JwtStrategy,
+    // JwtStrategy,
 
     CreateBlogHandler,
     UpdateBlogHandler,

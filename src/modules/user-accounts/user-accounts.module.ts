@@ -112,7 +112,7 @@ import {
     },
   ],
   exports: [
-    UserAccountsConfigModule,
+    // UserAccountsConfigModule,
     ACCESS_TOKEN_STRATEGY_INJECT_TOKEN,
     REFRESH_TOKEN_STRATEGY_INJECT_TOKEN,
   ],
