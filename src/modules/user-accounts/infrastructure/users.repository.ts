@@ -149,15 +149,19 @@ export class UsersRepository {
   }
 
   async updateConfirmationCode(userId: string, newCode: string): Promise<void> {
+    const newExpiration = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
     await this.dataSource.query(
       `UPDATE users
-       SET "emailConfirmation" = jsonb_set(
-               "emailConfirmation",
-               '{confirmationCode}',
-               to_jsonb($1::text)
-                                 )
+       SET "emailConfirmation" = "emailConfirmation" || $1::jsonb
        WHERE id = $2`,
-      [newCode, userId],
+      [
+        JSON.stringify({
+          confirmationCode: newCode,
+          expirationDate: newExpiration.toISOString(),
+        }),
+        userId,
+      ],
     );
   }
 }
