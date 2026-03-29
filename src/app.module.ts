@@ -8,11 +8,19 @@ import { TestingModule } from './testing/testing.module';
 import { BloggersPlatformModule } from './modules/bloggers-platform/bloggers-platform.module';
 import { configModule } from './config-dynamic-module';
 import { CoreConfig } from './core/core.config';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
     configModule,
     CoreModule, //запускает конфиг вообще везде за счет @Global
+    ThrottlerModule.forRoot([
+      {
+        ttl: 10000, // 10 секунд
+        limit: 5, // максимум 5 запросов
+      },
+    ]),
     TypeOrmModule.forRootAsync({
       useFactory: (coreConfig: CoreConfig) => {
         return {
@@ -37,7 +45,13 @@ import { CoreConfig } from './core/core.config';
     BloggersPlatformModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard, // применяется глобально
+    },
+  ],
 })
 export class AppModule {
   /**
