@@ -24,7 +24,6 @@ import {
 } from 'class-validator';
 import { UsersRepository } from '../../infrastructure/users.repository';
 
-
 @ValidatorConstraint({ async: true })
 @Injectable()
 export class IsEmailUnique implements ValidatorConstraintInterface {
@@ -39,6 +38,3 @@ export class IsEmailUnique implements ValidatorConstraintInterface {
     return 'Email already exists';
   }
 }
-
-
-

@@ -1,4 +1,3 @@
-
 export abstract class PaginatedViewDto<T> {
   abstract items: T;
   totalCount: number;

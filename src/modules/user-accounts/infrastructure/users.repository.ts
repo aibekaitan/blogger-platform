@@ -1,167 +1,105 @@
 import { Injectable } from '@nestjs/common';
-import { DataSource } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { User } from '../domain/user.entity';
 
 @Injectable()
 export class UsersRepository {
-  constructor(private dataSource: DataSource) {}
+  constructor(
+    @InjectRepository(User)
+    private readonly usersRepository: Repository<User>,
+  ) {}
 
   async findByLogin(login: string): Promise<User | null> {
-    const rows = await this.dataSource.query(
-      `SELECT * FROM users WHERE login = $1 LIMIT 1`,
-      [login],
-    );
-
-    return rows[0] ?? null;
+    return await this.usersRepository.findOneBy({ login });
   }
 
   async findByEmail(email: string): Promise<User | null> {
-    const rows = await this.dataSource.query(
-      `SELECT * FROM users WHERE email = $1 LIMIT 1`,
-      [email],
-    );
-
-    return rows[0] ?? null;
+    return await this.usersRepository.findOneBy({ email });
   }
 
   async findByLoginOrEmail(loginOrEmail: string): Promise<User | null> {
-    const rows = await this.dataSource.query(
-      `
-        SELECT *
-        FROM users
-        WHERE LOWER(login) = LOWER($1)
-           OR LOWER(email) = LOWER($1)
-        LIMIT 1
-      `,
-      [loginOrEmail.trim()],
-    );
-
-    return rows[0] ?? null;
+    const trimmed = loginOrEmail.trim().toLowerCase();
+    return await this.usersRepository
+      .createQueryBuilder('u')
+      .where('LOWER(u.login) = :val OR LOWER(u.email) = :val', { val: trimmed })
+      .getOne();
   }
 
   async doesExistByLoginOrEmail(
     login: string,
     email: string,
   ): Promise<boolean> {
-    const rows = await this.dataSource.query(
-      `SELECT 1 FROM users 
-       WHERE login = $1 OR email = $2 
-       LIMIT 1`,
-      [login, email],
-    );
-
-    return rows.length > 0;
+    const count = await this.usersRepository.count({
+      where: [{ login }, { email }],
+    });
+    return count > 0;
   }
 
   async findUserByConfirmationCode(code: string): Promise<User | null> {
-    const rows = await this.dataSource.query(
-      `SELECT * FROM users 
-       WHERE "emailConfirmation"->>'confirmationCode' = $1 
-       LIMIT 1`,
-      [code],
-    );
-
-    return rows[0] ?? null;
+    return await this.usersRepository
+      .createQueryBuilder('u')
+      .where("u.emailConfirmation->>'confirmationCode' = :code", { code })
+      .getOne();
   }
 
   async findUserByPasswordRecoveryCode(code: string): Promise<User | null> {
-    const rows = await this.dataSource.query(
-      `SELECT * FROM users
-       WHERE "passwordRecoveryCode" = $1
-           LIMIT 1`,
-      [code],
-    );
-
-    return rows[0] ?? null;
+    return await this.usersRepository.findOneBy({ passwordRecoveryCode: code });
   }
 
   async findById(id: string): Promise<User | null> {
-    const rows = await this.dataSource.query(
-      `SELECT * FROM users WHERE id = $1 LIMIT 1`,
-      [id],
-    );
-
-    return rows[0] ?? null;
+    return await this.usersRepository.findOneBy({ id });
   }
 
   async create(user: User): Promise<string> {
-    const rows = await this.dataSource.query(
-      `INSERT INTO users 
-      (login, email, "passwordHash", "createdAt", "emailConfirmation", "passwordRecoveryCode") 
-      VALUES ($1, $2, $3, $4, $5::jsonb, $6) 
-      RETURNING id`,
-      [
-        user.login,
-        user.email,
-        user.passwordHash,
-        user.createdAt || new Date(),
-        JSON.stringify(user.emailConfirmation),
-        user.passwordRecoveryCode || crypto.randomUUID(),
-      ],
-    );
-
-    return rows[0].id;
+    const savedUser = await this.usersRepository.save(user);
+    return savedUser.id;
   }
 
   async delete(id: string): Promise<boolean> {
-    const rows = await this.dataSource.query(
-      `DELETE FROM users WHERE id = $1 RETURNING id`,
-      [id],
-    );
-
-    return rows.length > 0;
+    const result = await this.usersRepository.delete(id);
+    return result.affected === 1;
   }
 
   async updateRefreshToken(
     userId: string,
     token: string | null,
   ): Promise<void> {
-    await this.dataSource.query(
-      `UPDATE users SET "refreshToken" = $1 WHERE id = $2`,
-      [token, userId],
-    );
+    await this.usersRepository.update(userId, {
+      refreshToken: token ?? null,
+    });
   }
 
   async confirmEmail(userId: string): Promise<void> {
-    await this.dataSource.query(
-      `UPDATE users
-       SET "emailConfirmation" = jsonb_set("emailConfirmation", '{isConfirmed}', 'true'::jsonb)
-       WHERE id = $1`,
-      [userId],
-    );
+    const user = await this.findById(userId);
+    if (user) {
+      user.emailConfirmation.isConfirmed = true;
+      await this.usersRepository.save(user);
+    }
   }
 
   async updatePassword(userId: string, newPasswordHash: string): Promise<void> {
-    await this.dataSource.query(
-      `UPDATE users SET "passwordHash" = $1 WHERE id = $2`,
-      [newPasswordHash, userId],
-    );
+    await this.usersRepository.update(userId, {
+      passwordHash: newPasswordHash,
+    });
   }
 
   async updatePasswordRecoveryCode(
     userId: string,
     newCode: string,
   ): Promise<void> {
-    await this.dataSource.query(
-      `UPDATE users SET "passwordRecoveryCode" = $1 WHERE id = $2`,
-      [newCode, userId],
-    );
+    await this.usersRepository.update(userId, {
+      passwordRecoveryCode: newCode,
+    });
   }
 
   async updateConfirmationCode(userId: string, newCode: string): Promise<void> {
-    const newExpiration = new Date(Date.now() + 24 * 60 * 60 * 1000);
-
-    await this.dataSource.query(
-      `UPDATE users
-       SET "emailConfirmation" = "emailConfirmation" || $1::jsonb
-       WHERE id = $2`,
-      [
-        JSON.stringify({
-          confirmationCode: newCode,
-          expirationDate: newExpiration.toISOString(),
-        }),
-        userId,
-      ],
-    );
+    const user = await this.findById(userId);
+    if (user) {
+      const newExpiration = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      user.emailConfirmation.confirmationCode = newCode;
+      user.emailConfirmation.expirationDate = newExpiration;
+      await this.usersRepository.save(user);
+    }
   }
 }

@@ -8,9 +8,7 @@ export const sortQueryFieldsUtil = (
     ? Number(query.pageNumber)
     : 1;
 
-  const pageSize = !isNaN(Number(query.pageSize))
-    ? Number(query.pageSize)
-    : 10;
+  const pageSize = !isNaN(Number(query.pageSize)) ? Number(query.pageSize) : 10;
 
   const sortBy = query.sortBy ? query.sortBy : 'createdAt';
 

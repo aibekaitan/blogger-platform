@@ -1,0 +1,297 @@
+Работа с TypeORM в NestJS
+1. Установка зависимостей
+bash
+pnpm add @nestjs/typeorm typeorm pg
+2. Конфигурация
+2.1. Вариант конфигурации 1
+app.module.ts
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+
+import { AppController } from './app.controller';
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+    TypeOrmModule.forRoot({
+      type: 'postgres',
+      host: process.env.POSTGRES_HOST,
+      port: parseInt(<string>process.env.POSTGRES_PORT),
+      username: process.env.POSTGRES_USER,
+      password: process.env.POSTGRES_PASSWORD,
+      database: process.env.POSTGRES_DATABASE,
+      autoLoadEntities: true,
+      synchronize: true,
+    }),
+  ],
+  controllers: [AppController],
+})
+export class AppModule {}
+2.2. Вариант конфигурации 2
+config/db.config.ts
+export interface DatabaseConfig {
+  database: Partial<TypeOrmModuleOptions>;
+}
+
+export default (): DatabaseConfig => ({
+  database: {
+    type: 'postgres',
+    url: process.env.DATABASE_URL,
+    autoLoadEntities: true,
+    synchronize: true,
+  },
+});
+app.module.ts
+import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+
+import { AppController } from './app.controller';
+import databaseConf, { type DatabaseConfig } from './config/db.config';
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      load: [databaseConf],
+    }),
+    TypeOrmModule.forRootAsync({
+      useFactory(config: ConfigService<DatabaseConfig>) {
+        return config.get('database', {
+          infer: true,
+        });
+      },
+      inject: [ConfigService],
+    }),
+  ],
+  controllers: [AppController],
+})
+export class AppModule {}
+Материалы
+Описание основных свойств конфигурации
+Описание дополнительных свойств конфигурации, предоставляемых Nest.js
+3. Создание сущности
+Сущность в TypeORM представляет собой класс, который декорируется с использованием декоратора @Entity. Данный класс является отражением в программном коде реальных данных (например, таблиц).
+
+users/domain/entities/user.entity.ts
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+
+@Entity()
+export class User {
+  @PrimaryGeneratedColumn()
+  public id: number;
+
+  @Column()
+  public username: string;
+
+  @Column()
+  public email: string;
+
+  @Column({ nullable: true })
+  public tel: string;
+}
+На основе данной сущности TypeORM создаст в базе данных соответствующую таблицу user.
+
+Все используемые в модуле сущности должны быть зарегистрированы с помощью TypeOrmModule.forFeature.
+
+users.module.ts
+import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+
+import { User } from 'src/modules/users/domain/entities/user.entity';
+
+@Module({
+  imports: [TypeOrmModule.forFeature([User])],
+  controllers: [],
+  providers: [],
+})
+export class UsersModule {}
+Материалы
+Виды колонок
+Типы колонок для postgres
+Свойства колонок
+4. Создание связи один к одному
+Добавим профиль пользователю. У каждого пользователя может быть только один профиль, и каждый профиль может быть связан только с одним пользователем. Это отношение определяет связь одним к одному.
+
+Связи между сущностями определяют связи между таблицами. Для создания связи один к одному в TypeORM используется декоратор @OneToOne.
+
+На сущности, соответствующая таблица которой будет содержать внешний ключ, совместно с декоратором @OneToOne используется декоратор @JoinColumn.
+
+users/domain/entities/profile.entity.ts
+@Entity()
+export class UserProfile {
+  @PrimaryGeneratedColumn()
+  public id: number;
+
+  @Column()
+  public bio: string;
+
+  @OneToOne((type) => User, (user) => user.profile)
+  @JoinColumn()
+  public user: User;
+}
+Название внешнего ключа в таблице будет состоять из названия поля, декорируемого с использованием @JoinColumn, и названия первичного ключа связываемой сущности, которое определяется наличием одного из соответствующих декораторов, например, @PrimaryGeneratedColumn.
+
+В нашем случае, декорируемое с помощью @JoinColumn, поле сущности UserProfile имеет название user, а первичный ключ связываемой сущности User имеет название id, поэтому внешний ключ соответствующей таблицы user_profile будет иметь название userId.
+
+При необходимости название внешнего ключа и связываемые поля можно переопределить передав соответствующий объект в @JoinColumn.
+
+На данный момент связь между сущностями односторонняя. Т.е. информация о связываемой сущности располагается на одной стороне, в нашем случае на стороне UserPofile (поле user).
+
+Для создания двусторонней связи необходимо применить декоратор @OneToOne к выбранному полю сущности, с которой устанавливается связь.
+
+Декоратор @JoinColumn добавляется только на той сущности, где находится внешний ключ.
+
+users/domain/entities/user.entity.ts
+@Entity()
+export class User {
+  // ... existing columns
+
+  @OneToOne((type) => UserProfile, (profile) => profile.user)
+  public profile: UserProfile;
+}
+Материалы
+Связь один к одному
+5. Создание связи один ко многим
+Свяжем нашего пользователя с публикуемыми им постами. Для данного типа связи (один ко многим) в TypeORM используется два декоратора: @OneToMany и @ManyToOne.
+
+Декоратор @ManyToOne используется на той сущности, таблица которой будет содержать внешний ключ.
+
+posts/domain/entity/post.entity.ts
+@Entity()
+export class Post {
+  @PrimaryGeneratedColumn()
+  public id: number;
+
+  @Column()
+  public title: string;
+
+  @ManyToOne((type) => User, (user) => user.posts)
+  public user: User;
+}
+Мы можем использовать декоратор @JoinColumn совместно с @ManyToOneдля изменения имени внешнего ключа или связываемого поля другой сущности.
+
+Давайте теперь создадим двустороннюю связь между User и Post. Для этого применим декоратор @OneToMany к полю posts сущности User.
+
+users/domain/entities/user.entity.ts
+@Entity()
+export class User {
+  // ... existing columns
+
+  @OneToMany((type) => Post, (post) => post.user)
+  public posts: Post[];
+}
+Материалы
+Связь один ко многим
+6. Создание связи многие ко многим
+Добавим теги к постам. Эта связь многие ко многим, для указания данной связи между сущностями используется декоратор @ManyToMany.
+
+Для связи многие ко многим на одной из сущностей совместно с @ManyToMany необходимо использовать декоратор @JoinTable.
+
+posts/domain/entities/post.entity.ts
+@Entity()
+export class Post {
+  @PrimaryGeneratedColumn()
+  public id: number;
+
+  @Column()
+  public title: string;
+
+  @ManyToOne((type) => User, (user) => user.posts)
+  public user: User;
+
+  @ManyToMany((type) => Tag, (tag) => tag.posts)
+  @JoinTable()
+  public tags: Tag[];
+}
+posts/domain/entities/tag.entity.ts
+@Entity()
+export class Tag {
+  @PrimaryGeneratedColumn()
+  public id: number;
+
+  @Column()
+  public name: string;
+
+  @ManyToMany((type) => Post, (post) => post.tags)
+  public posts: Post[];
+}
+Наличие декоратора @JoinTable необходимо для создания смежной таблицы. Смежная таблица содержит только первичные ключи связываемых таблиц.
+
+Если в таблице нужны дополнительные поля, то в этому случае следует вручную создать соответствующую ей отдельную сущность.
+
+Материалы
+Связь многие ко многим
+7. Использование EntityManager
+EntityManager используется для осуществления различных операций с использованием различных сущностей, таких как вставка, обновление, удаление, чтение и т.д.
+
+В NestJS для работы с EntityManager используется специальный декоратор @InjectEntityManager
+
+users/infrastructure/repositories/users.repository.ts
+@Injectable()
+export class UsersRepository {
+  public constructor(
+    @InjectEntityManager()
+    private readonly entityManager: EntityManager
+  ) {}
+}
+Создадим метод, который делает выборку всех пользователей и подсчитывает их количество.
+
+users/infrastructure/repositories/users.repository.ts
+@Injectable()
+export class UsersRepository {
+  public constructor(
+    @InjectEntityManager()
+    private readonly entityManager: EntityManager
+  ) {}
+
+  public async getAllAndCount(): Promise<[User[], number]> {
+    try {
+      const result = await this.entityManager.findAndCount(User);
+
+      return result;
+    } catch (error) {
+      console.log(error);
+
+      return [[], 0];
+    }
+  }
+}
+Так как EntityManager позволяет работать с любой сущностью, мы обязаны передавать её в качестве аргумента в выбранный метод.
+
+Недостатком данного подхода является необходимость каждый раз явно указывать необходимую сущность. Данную проблему решает Repository.
+
+Материалы
+EntityManager API
+8. Использование Repository
+Заменим EntityManager на Repository применив декоратор @InjectRepository.
+
+users/infrastructure/repositories/users.repository.ts
+@Injectable()
+export class UsersRepository {
+  public constructor(
+    @InjectRepository(Post)
+    private readonly posts: Repository<Post>
+  ) {}
+
+  public async getAllAndCount(): Promise<[Post[], number]> {
+    try {
+      const result = await this.posts.findAndCount();
+
+      return result;
+    } catch (error) {
+      console.log(error);
+
+      return [[], 0];
+    }
+  }
+
+  // ... other methods
+}
+Специальный тип Repository из пакета typeorm, принимает в качестве аргумента дженерик, который представляет собой тип сущности, используемой в качестве репозитория.
+
+Материалы
+Repository API

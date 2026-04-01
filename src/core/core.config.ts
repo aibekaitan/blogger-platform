@@ -31,12 +31,14 @@ export class CoreConfig {
     this.env = this.configService.get('NODE_ENV') || Environments.DEVELOPMENT;
     this.port = Number(this.configService.get('PORT')) || 5005;
     this.databaseUrl = this.configService.get('DATABASE_URL');
-    this.isSwaggerEnabled = configValidationUtility.convertToBoolean(
-      this.configService.get('IS_SWAGGER_ENABLED'),
-    ) ?? true;
-    this.includeTestingModule = configValidationUtility.convertToBoolean(
-      this.configService.get('INCLUDE_TESTING_MODULE'),
-    ) ?? false;
+    this.isSwaggerEnabled =
+      configValidationUtility.convertToBoolean(
+        this.configService.get('IS_SWAGGER_ENABLED'),
+      ) ?? true;
+    this.includeTestingModule =
+      configValidationUtility.convertToBoolean(
+        this.configService.get('INCLUDE_TESTING_MODULE'),
+      ) ?? false;
 
     configValidationUtility.validateConfig(this);
   }

@@ -1,4 +1,3 @@
-
 import { Command } from '@nestjs/cqrs';
 
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';

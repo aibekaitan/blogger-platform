@@ -1,59 +1,30 @@
 import { Injectable } from '@nestjs/common';
-import { DataSource } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, LessThan, Not } from 'typeorm';
+import { Device } from '../../domain/device.model';
 import { DeviceDB, DeviceDBWithId } from '../../types/devices.dto';
 
 @Injectable()
 export class DevicesRepository {
-  constructor(private readonly dataSource: DataSource) {}
+  constructor(
+    @InjectRepository(Device)
+    private readonly devicesRepository: Repository<Device>,
+  ) {}
 
-  async findAllByUserId(userId: string): Promise<DeviceDBWithId[]> {
-    const result = await this.dataSource.query(
-      `
-      SELECT 
-        id,
-        "userId",
-        "deviceId",
-        ip,
-        title,
-        "lastActiveDate",
-        "expirationDate",
-        "refreshToken"
-      FROM devices
-      WHERE "userId" = $1
-      ORDER BY "lastActiveDate" DESC
-      `,
-      [userId],
-    );
+  // async findAllByUserId(userId: string): Promise<DeviceDBWithId[]> {
+  //   const devices = await this.devicesRepository.find({
+  //     where: { userId },
+  //     order: { lastActiveDate: 'DESC' },
+  //   });
+  //   return devices;
+  // }
 
-    return result as DeviceDBWithId[];
+  async findByDeviceId(deviceId: string): Promise<Device | null> {
+    const device = await this.devicesRepository.findOneBy({ deviceId });
+    return device || null;
   }
 
-  async findByDeviceId(deviceId: string): Promise<DeviceDBWithId | null> {
-    const [result] = await this.dataSource.query(
-      `
-      SELECT 
-        id,
-        "userId",
-        "deviceId",
-        ip,
-        title,
-        "lastActiveDate",
-        "expirationDate",
-        "refreshToken"
-      FROM devices
-      WHERE "deviceId" = $1
-      LIMIT 1
-      `,
-      [deviceId],
-    );
-
-    return result || null;
-  }
-
-
-  async upsertDevice(
-    deviceData: Omit<DeviceDB, 'id'>,
-  ): Promise<DeviceDBWithId> {
+  async upsertDevice(deviceData: Omit<DeviceDB, 'id'>): Promise<Device> {
     const {
       userId,
       deviceId,
@@ -64,37 +35,8 @@ export class DevicesRepository {
       refreshToken,
     } = deviceData;
 
-    const [updated] = await this.dataSource.query(
-      `
-      INSERT INTO devices (
-        "userId", 
-        "deviceId", 
-        ip, 
-        title, 
-        "lastActiveDate", 
-        "expirationDate", 
-        "refreshToken"
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      ON CONFLICT ("deviceId") 
-      DO UPDATE SET
-        ip = EXCLUDED.ip,
-        title = EXCLUDED.title,
-        "lastActiveDate" = EXCLUDED."lastActiveDate",
-        "expirationDate" = EXCLUDED."expirationDate",
-        "refreshToken" = EXCLUDED."refreshToken",
-        "userId" = EXCLUDED."userId"
-      RETURNING 
-        id,
-        "userId",
-        "deviceId",
-        ip,
-        title,
-        "lastActiveDate",
-        "expirationDate",
-        "refreshToken"
-      `,
-      [
+    await this.devicesRepository.upsert(
+      {
         userId,
         deviceId,
         ip,
@@ -102,71 +44,54 @@ export class DevicesRepository {
         lastActiveDate,
         expirationDate,
         refreshToken,
-      ],
+      },
+      ['deviceId'],
     );
 
+    const updated = await this.devicesRepository.findOneBy({ deviceId });
     if (!updated) {
       throw new Error('Failed to upsert device');
     }
 
-    return updated as DeviceDBWithId;
+    return updated;
   }
 
   async deleteByDeviceId(deviceId: string): Promise<boolean> {
-    const result = await this.dataSource.query(
-      `DELETE FROM devices WHERE "deviceId" = $1`,
-      [deviceId],
-    );
-
-    return (result[1] as number) === 1;
+    const result = await this.devicesRepository.delete({ deviceId });
+    return result.affected === 1;
   }
 
   async deleteAllExceptCurrent(
     userId: string,
     currentDeviceId: string,
   ): Promise<number> {
-    const result = await this.dataSource.query(
-      `
-      DELETE FROM devices 
-      WHERE "userId" = $1 
-      AND "deviceId" != $2
-      `,
-      [userId, currentDeviceId],
-    );
-
-    return result[1] as number;
+    const result = await this.devicesRepository.delete({
+      userId,
+      deviceId: Not(currentDeviceId),
+    });
+    return result.affected || 0;
   }
 
   async deleteAllByUserId(userId: string): Promise<number> {
-    const result = await this.dataSource.query(
-      `DELETE FROM devices WHERE "userId" = $1`,
-      [userId],
-    );
-
-    return result[1] as number;
+    const result = await this.devicesRepository.delete({ userId });
+    return result.affected || 0;
   }
 
   async deleteExpired(): Promise<number> {
-    const result = await this.dataSource.query(
-      `DELETE FROM devices WHERE "expirationDate" < NOW()`,
-    );
-
-    return result[1] as number;
+    const result = await this.devicesRepository.delete({
+      expirationDate: LessThan(new Date()),
+    });
+    return result.affected || 0;
   }
 
   async updateLastActiveDate(
     deviceId: string,
     newDate: Date = new Date(),
   ): Promise<boolean> {
-    const result = await this.dataSource.query(
-      `
-      UPDATE devices 
-      SET "lastActiveDate" = $1 
-      WHERE "deviceId" = $2
-      `,
-      [newDate, deviceId],
+    const result = await this.devicesRepository.update(
+      { deviceId },
+      { lastActiveDate: newDate },
     );
-
-    return (result[1] as number) === 1;
+    return result.affected === 1;
   }
 }

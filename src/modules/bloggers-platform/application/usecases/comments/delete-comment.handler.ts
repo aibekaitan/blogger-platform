@@ -1,10 +1,7 @@
-// delete-comment.command.ts
-import { Command } from '@nestjs/cqrs';
-
-// delete-comment.handler.ts
-import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
+import { Command, CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { CommentRepository } from '../../../infrastructure/comments.repository';
+
 export class DeleteCommentCommand extends Command<void> {
   constructor(
     public readonly commentId: string,
@@ -13,6 +10,7 @@ export class DeleteCommentCommand extends Command<void> {
     super();
   }
 }
+
 @CommandHandler(DeleteCommentCommand)
 export class DeleteCommentHandler implements ICommandHandler<
   DeleteCommentCommand,
@@ -28,7 +26,7 @@ export class DeleteCommentHandler implements ICommandHandler<
       throw new NotFoundException('Comment not found');
     }
 
-    if (comment.commentatorInfo.userId !== currentUserId) {
+    if (comment.userId !== currentUserId) {
       throw new ForbiddenException('Forbidden: not your comment');
     }
 

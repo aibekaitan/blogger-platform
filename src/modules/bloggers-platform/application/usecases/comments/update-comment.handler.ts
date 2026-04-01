@@ -1,7 +1,4 @@
-// update-comment.command.ts
-import { Command } from '@nestjs/cqrs';
-
-import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
+import { Command, CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { CommentInputModel } from '../../../dto/input-dto/comment.input';
 import { CommentRepository } from '../../../infrastructure/comments.repository';
@@ -15,6 +12,7 @@ export class UpdateCommentCommand extends Command<void> {
     super();
   }
 }
+
 @CommandHandler(UpdateCommentCommand)
 export class UpdateCommentHandler implements ICommandHandler<
   UpdateCommentCommand,
@@ -30,7 +28,7 @@ export class UpdateCommentHandler implements ICommandHandler<
       throw new NotFoundException('Comment not found');
     }
 
-    if (comment.commentatorInfo.userId !== currentUserId) {
+    if (comment.userId !== currentUserId) {
       throw new ForbiddenException(
         'Forbidden: you are not the owner of this comment',
       );

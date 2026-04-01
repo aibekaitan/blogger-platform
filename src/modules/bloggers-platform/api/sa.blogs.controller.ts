@@ -136,7 +136,6 @@ export class SaBlogsController {
       throw new NotFoundException('Blog not found');
     }
 
-
     return;
   }
 
@@ -150,7 +149,6 @@ export class SaBlogsController {
     if (!deleted) {
       throw new NotFoundException('Blog not found');
     }
-
 
     return;
   }

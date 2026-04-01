@@ -1,73 +1,47 @@
 import { Injectable } from '@nestjs/common';
-import { DataSource } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Device } from '../../domain/device.model';
 import { DeviceViewModel } from '../../domain/dto/view-dto';
 
 @Injectable()
 export class SecurityDevicesQueryRepository {
-  constructor(private readonly dataSource: DataSource) {}
+  constructor(
+    @InjectRepository(Device)
+    private readonly devicesRepository: Repository<Device>,
+  ) {}
 
-  private mapToViewModel(row: any): DeviceViewModel {
+  private mapToViewModel(device: Device): DeviceViewModel {
     return {
-      ip: row.ip,
-      title: row.title,
-      lastActiveDate: new Date(row.lastActiveDate).toISOString(),
-      deviceId: row.deviceId,
+      ip: device.ip,
+      title: device.title,
+      lastActiveDate: device.lastActiveDate.toISOString(),
+      deviceId: device.deviceId,
     };
   }
 
   async findAllByUserId(userId: string): Promise<DeviceViewModel[]> {
-    const rows = await this.dataSource.query(
-      `
-      SELECT 
-        ip,
-        title,
-        "lastActiveDate",
-        "deviceId"
-      FROM devices
-      WHERE "userId" = $1
-      ORDER BY "lastActiveDate" DESC
-      `,
-      [userId],
-    );
+    const devices = await this.devicesRepository.find({
+      where: { userId },
+      order: { lastActiveDate: 'DESC' },
+    });
 
-    return rows.map((row) => this.mapToViewModel(row));
+    return devices.map((device) => this.mapToViewModel(device));
   }
 
   async findByDeviceId(deviceId: string): Promise<DeviceViewModel | null> {
-    const [row] = await this.dataSource.query(
-      `
-      SELECT 
-        ip,
-        title,
-        "lastActiveDate",
-        "deviceId"
-      FROM devices
-      WHERE "deviceId" = $1
-      LIMIT 1
-      `,
-      [deviceId],
-    );
+    const device = await this.devicesRepository.findOneBy({ deviceId });
 
-    if (!row) {
+    if (!device) {
       return null;
     }
 
-    return this.mapToViewModel(row);
+    return this.mapToViewModel(device);
   }
 
   async existsByDeviceId(deviceId: string): Promise<boolean> {
-    const [result] = await this.dataSource.query(
-      `
-      SELECT EXISTS (
-        SELECT 1 
-        FROM devices 
-        WHERE "deviceId" = $1
-        LIMIT 1
-      ) AS "exists"
-      `,
-      [deviceId],
-    );
-
-    return result?.exists === true;
+    const count = await this.devicesRepository.countBy({ deviceId });
+    return count > 0;
   }
 }
+

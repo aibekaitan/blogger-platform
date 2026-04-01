@@ -1,89 +1,58 @@
-import { Injectable } from '@nestjs/common';
-import { DataSource } from 'typeorm';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { User } from '../../domain/user.entity';
 import { SortQueryFilterType } from '../../../../common/types/sortQueryFilter.type';
 import { IPagination } from '../../../../common/types/pagination';
 import { IUserView, IUserView2 } from '../../types/user.view.interface';
 
 @Injectable()
 export class UsersQueryRepository {
-  constructor(private readonly dataSource: DataSource) {}
+  constructor(
+    @InjectRepository(User)
+    private readonly usersRepository: Repository<User>,
+  ) {}
 
   async findAllUsers(
     sortQueryDto: SortQueryFilterType,
   ): Promise<IPagination<IUserView[]>> {
     const {
-      searchEmailTerm = '',
-      searchLoginTerm = '',
+      searchEmailTerm = null,
+      searchLoginTerm = null,
       sortBy = 'createdAt',
       sortDirection = 'desc',
       pageSize = 10,
       pageNumber = 1,
     } = sortQueryDto;
 
+    const queryBuilder = this.usersRepository.createQueryBuilder('u');
 
-    const direction = sortDirection === 'desc' ? 'DESC' : 'ASC';
-
+    if (searchLoginTerm || searchEmailTerm) {
+      queryBuilder.where(
+        '(u.login ILIKE :login OR u.email ILIKE :email)',
+        {
+          login: searchLoginTerm ? `%${searchLoginTerm}%` : 'null',
+          email: searchEmailTerm ? `%${searchEmailTerm}%` : 'null',
+        },
+      );
+    }
 
     const allowedSortFields = ['login', 'email', 'createdAt'];
     const safeSortBy = allowedSortFields.includes(sortBy)
       ? sortBy
       : 'createdAt';
 
+    queryBuilder
+      .orderBy(`u.${safeSortBy}`, sortDirection.toUpperCase() as 'ASC' | 'DESC')
+      .skip((pageNumber - 1) * pageSize)
+      .take(pageSize);
 
-    let whereClause = '';
-    const params: any[] = [];
-    let paramIndex = 1;
+    const [users, totalCount] = await queryBuilder.getManyAndCount();
 
-    const conditions: string[] = [];
-
-    if (searchLoginTerm) {
-      conditions.push(`login ILIKE $${paramIndex}`);
-      params.push(`%${searchLoginTerm}%`);
-      paramIndex++;
-    }
-
-    if (searchEmailTerm) {
-      conditions.push(`email ILIKE $${paramIndex}`);
-      params.push(`%${searchEmailTerm}%`);
-      paramIndex++;
-    }
-
-    if (conditions.length) {
-      whereClause = `WHERE (${conditions.join(' OR ')})`;
-    }
-
-
-    const countQuery = `
-      SELECT COUNT(*) as total
-      FROM users
-      ${whereClause}
-    `;
-
-    const countResult = await this.dataSource.query(countQuery, params);
-    const totalCount = Number(countResult[0]?.total ?? 0);
-
-
-    const dataQuery = `
-      SELECT 
-        id,
-        login,
-        email,
-        "createdAt"
-      FROM users
-      ${whereClause}
-      ORDER BY "${safeSortBy}" ${direction}
-      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
-    `;
-
-
-    const dataParams = [...params, pageSize, (pageNumber - 1) * pageSize];
-
-    const usersRaw = await this.dataSource.query(dataQuery, dataParams);
-
-    const items = usersRaw.map((row: any) => this._toUserView(row));
+    const items = users.map((user) => this._toUserView(user));
 
     return {
-      pagesCount: totalCount > 0 ? Math.ceil(totalCount / pageSize) : 0,
+      pagesCount: Math.ceil(totalCount / pageSize),
       page: pageNumber,
       pageSize,
       totalCount,
@@ -92,55 +61,30 @@ export class UsersQueryRepository {
   }
 
   async getByIdOrNotFoundFail(id: string): Promise<IUserView> {
-    if (
-      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-        id,
-      )
-    ) {
-      throw new Error('Invalid user ID');
-    }
-
-    const query = `
-      SELECT 
-        id,
-        login,
-        email,
-        "createdAt"
-      FROM users
-      WHERE id = $1
-      LIMIT 1
-    `;
-
-    const [user] = await this.dataSource.query(query, [id]);
+    const user = await this.usersRepository.findOneBy({ id });
 
     if (!user) {
-      throw new Error('User not found');
+      throw new NotFoundException('User not found');
     }
 
     return this._toUserView(user);
   }
 
-  private _toUserView(row: any): IUserView {
+  private _toUserView(user: User): IUserView {
     return {
-      id: row.id,
-      login: row.login,
-      email: row.email,
-      "createdAt": new Date(row.createdAt).toISOString(),
+      id: user.id,
+      login: user.login,
+      email: user.email,
+      createdAt: user.createdAt.toISOString(),
     };
   }
 
-  private _toUserView2(row: any): IUserView2 {
+  private _toUserView2(user: User): IUserView2 {
     return {
-      userId: row.id,
-      login: row.login,
-      email: row.email,
+      userId: user.id,
+      login: user.login,
+      email: user.email,
     };
-  }
-
-
-  private _checkId(id: string): boolean {
-    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-      id,
-    );
   }
 }
+

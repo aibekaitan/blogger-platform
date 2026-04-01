@@ -1,10 +1,13 @@
 import { randomUUID } from 'crypto';
+import { Device } from './device.model';
+import { Comment } from '../../bloggers-platform/domain/comment.entity';
 import {
   Entity,
   Column,
   PrimaryGeneratedColumn,
   CreateDateColumn,
   Index,
+  OneToMany,
 } from 'typeorm';
 
 export class EmailConfirmation {
@@ -38,7 +41,7 @@ export class User {
   createdAt: Date;
 
   @Column({ type: 'varchar', length: 500, nullable: true, default: null })
-  refreshToken?: string;
+  refreshToken?: string | null;
 
   @Column({
     type: 'varchar',
@@ -50,6 +53,12 @@ export class User {
 
   @Column({ type: 'jsonb', nullable: false })
   emailConfirmation: EmailConfirmation;
+
+  @OneToMany(() => Device, (device) => device.user)
+  devices: Device[];
+
+  @OneToMany(() => Comment, (comment) => comment.user)
+  comments: Comment[];
 
   static create(
     dto: {

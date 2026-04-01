@@ -15,10 +15,7 @@ import { TestingService } from './application/testing.service';
 //   CommentSchema,
 // } from '../modules/bloggers-platform/domain/comment.entity';
 // import { User, UserSchema } from '../modules/user-accounts/domain/user.entity';
-import {
-  Like
-} from '../modules/bloggers-platform/domain/like.entity';
-
+import { Like } from '../modules/bloggers-platform/domain/like.entity';
 
 @Module({
   imports: [

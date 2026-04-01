@@ -5,7 +5,10 @@ import { Command } from '@nestjs/cqrs';
 import { UsersRepository } from '../../../infrastructure/users.repository';
 import { BcryptService } from '../../../adapters/bcrypt.service';
 import { DevicesRepository } from '../../../infrastructure/security-devices/security-devices.repository';
-import { ACCESS_TOKEN_STRATEGY_INJECT_TOKEN, REFRESH_TOKEN_STRATEGY_INJECT_TOKEN } from '../../../constants';
+import {
+  ACCESS_TOKEN_STRATEGY_INJECT_TOKEN,
+  REFRESH_TOKEN_STRATEGY_INJECT_TOKEN,
+} from '../../../constants';
 
 export class LoginUserCommand extends Command<{
   accessToken: string;
@@ -55,7 +58,11 @@ export class LoginUserUseCase implements ICommandHandler<
     const deviceId = crypto.randomUUID();
 
     const accessToken = this.accessTokenService.sign({ userId, login });
-    const refreshToken = this.refreshTokenService.sign({ userId, login, deviceId });
+    const refreshToken = this.refreshTokenService.sign({
+      userId,
+      login,
+      deviceId,
+    });
 
     await this.devicesRepository.upsertDevice({
       userId,

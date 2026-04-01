@@ -4,6 +4,7 @@ import { UsersRepository } from '../user-accounts/infrastructure/users.repositor
 import { BcryptService } from '../user-accounts/adapters/bcrypt.service';
 import { BlogsRepository } from './infrastructure/blogs.repository';
 import { PostQueryRepository } from './infrastructure/query-repo/posts.query.repository';
+import { CommentsQueryRepository } from './infrastructure/query-repo/comments.query.repository';
 import { CommentRepository } from './infrastructure/comments.repository';
 import { BlogsController } from './api/blogs.controller';
 import { Like } from './domain/like.entity';
@@ -69,6 +70,7 @@ import { DeletePostForBlogHandler } from './application/usecases/blogs/delete-po
     BcryptService,
     BlogsRepository,
     PostQueryRepository,
+    CommentsQueryRepository,
     CommentRepository,
     PostRepository,
     // JwtStrategy,

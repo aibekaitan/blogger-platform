@@ -1,13 +1,10 @@
-// create-comment-for-post.command.ts
-import { Command } from '@nestjs/cqrs';
-
-import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
+import { Command, CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { NotFoundException } from '@nestjs/common';
 import { CommentViewModel } from '../../../dto/comments.dto';
 import { CommentInputModel } from '../../../dto/input-dto/comment.input';
 import { PostRepository } from '../../../infrastructure/posts.repository';
 import { CommentRepository } from '../../../infrastructure/comments.repository';
-import { PostQueryRepository } from '../../../infrastructure/query-repo/posts.query.repository';
+import { CommentsQueryRepository } from '../../../infrastructure/query-repo/comments.query.repository';
 
 export class CreateCommentForPostCommand extends Command<CommentViewModel> {
   constructor(
@@ -18,6 +15,7 @@ export class CreateCommentForPostCommand extends Command<CommentViewModel> {
     super();
   }
 }
+
 @CommandHandler(CreateCommentForPostCommand)
 export class CreateCommentForPostHandler implements ICommandHandler<
   CreateCommentForPostCommand,
@@ -26,7 +24,7 @@ export class CreateCommentForPostHandler implements ICommandHandler<
   constructor(
     private readonly postRepository: PostRepository,
     private readonly commentRepository: CommentRepository,
-    private readonly postQueryRepository: PostQueryRepository,
+    private readonly commentsQueryRepository: CommentsQueryRepository,
   ) {}
 
   async execute(
@@ -34,7 +32,7 @@ export class CreateCommentForPostHandler implements ICommandHandler<
   ): Promise<CommentViewModel> {
     const { postId, dto, userId } = command;
 
-    const post = await this.postRepository.findById(postId, userId);
+    const post = await this.postRepository.findById(postId);
     if (!post) {
       throw new NotFoundException('Post not found');
     }
@@ -44,6 +42,7 @@ export class CreateCommentForPostHandler implements ICommandHandler<
       postId,
       userId,
     );
-    return this.postQueryRepository._getInViewComment(createdComment, userId);
+
+    return this.commentsQueryRepository._mapToViewModel(createdComment, userId);
   }
 }

@@ -1,9 +1,11 @@
+import { Post } from './post.entity';
 import {
   Entity,
   Column,
   PrimaryGeneratedColumn,
   CreateDateColumn,
   Index,
+  OneToMany,
 } from 'typeorm';
 
 @Entity('blogs')
@@ -27,6 +29,10 @@ export class Blog {
 
   @Column({ type: 'boolean', default: false })
   isMembership: boolean;
+
+  @OneToMany(() => Post, (post) => post.blog)
+  posts: Post[];
+
   static create(dto: {
     name: string;
     description: string;

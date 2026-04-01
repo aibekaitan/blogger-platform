@@ -1,4 +1,3 @@
-
 import { QueryHandler, IQueryHandler } from '@nestjs/cqrs';
 
 import { Query } from '@nestjs/cqrs';

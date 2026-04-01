@@ -20,14 +20,11 @@ export class TestingService {
       // Список таблиц в правильном порядке (от зависимых → к независимым)
       const tables = [
         'comments', // зависит от posts и users
+        'likes', // зависит от comments и users
         'posts', // зависит от blogs и users
         'blogs', // зависит от users
         'devices',
         'users', // независимая (или почти)
-
-        // 'likes',
-        // 'request_logs',
-        // ... добавляй остальные
       ];
 
       for (const table of tables) {

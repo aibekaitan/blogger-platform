@@ -1,28 +1,29 @@
-// blogs.repository.ts
 import {
-  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { DataSource } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { Blog } from '../domain/blog.entity';
 import { Post } from '../domain/post.entity';
 import { Like, LikeStatus } from '../domain/like.entity';
 import { mapBlogToView } from '../api/middlewares/blog.mapper';
 import { mapPostToView } from '../api/middlewares/posts.mapper';
 import { CreatePostForBlogInputModel } from '../dto/input-dto/create-post-for-blog.input';
-import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class BlogsRepository {
-  constructor(private dataSource: DataSource) {}
+  constructor(
+    @InjectRepository(Blog)
+    private readonly blogsRepository: Repository<Blog>,
+    @InjectRepository(Post)
+    private readonly postsRepository: Repository<Post>,
+    @InjectRepository(Like)
+    private readonly likesRepository: Repository<Like>,
+  ) {}
 
   async findById(id: string): Promise<Blog | null> {
-    const rows = await this.dataSource.query(
-      `SELECT * FROM blogs WHERE id = $1 LIMIT 1`,
-      [id],
-    );
-    return rows[0] ?? null;
+    return await this.blogsRepository.findOneBy({ id });
   }
 
   async findOrNotFoundFail(id: string): Promise<Blog> {
@@ -32,14 +33,7 @@ export class BlogsRepository {
   }
 
   async save(blog: Blog): Promise<void> {
-    await this.dataSource.query(
-      `
-        UPDATE blogs
-        SET name = $1, description = $2, "websiteUrl" = $3
-        WHERE id = $4
-      `,
-      [blog.name, blog.description, blog.websiteUrl, blog.id],
-    );
+    await this.blogsRepository.save(blog);
   }
 
   async create(blogData: {
@@ -47,36 +41,15 @@ export class BlogsRepository {
     description: string;
     websiteUrl: string;
   }): Promise<Blog> {
-
-
-
-    const id = uuidv4();
-    const createdAt = new Date();
-
-    await this.dataSource.query(
-      `INSERT INTO blogs (id, name, description, "websiteUrl", "createdAt", "isMembership")
-     VALUES ($1, $2, $3, $4, $5, false)`,
-      [id, blogData.name.trim(), blogData.description.trim(), blogData.websiteUrl, createdAt],
-    );
-
-
-    return {
-      id,
-      name: blogData.name.trim(),
-      description: blogData.description.trim(),
-      websiteUrl: blogData.websiteUrl,
-      createdAt,
-      isMembership: false,
-    };
+    const blog = Blog.create(blogData);
+    return await this.blogsRepository.save(blog);
   }
 
   async delete(id: string): Promise<boolean> {
-    const result = await this.dataSource.query(
-      `DELETE FROM blogs WHERE id = $1::uuid RETURNING id`,
-      [id],
-    );
-    return result[1]>0;
+    const result = await this.blogsRepository.delete(id);
+    return result.affected === 1;
   }
+
   async findAllBlogs(params: {
     pageNumber: number;
     pageSize: number;
@@ -87,29 +60,19 @@ export class BlogsRepository {
     const { pageNumber, pageSize, sortBy, sortDirection, searchNameTerm } =
       params;
 
-    const filterQuery = searchNameTerm
-      ? `WHERE name ILIKE '%' || $1 || '%'`
-      : '';
-    const filterParam = searchNameTerm ? [searchNameTerm] : [];
+    const queryBuilder = this.blogsRepository.createQueryBuilder('b');
 
-    const totalCountResult = await this.dataSource.query(
-      `SELECT COUNT(*) as count FROM blogs ${filterQuery}`,
-      filterParam,
+    if (searchNameTerm) {
+      queryBuilder.where('b.name ILIKE :name', { name: `%${searchNameTerm}%` });
+    }
+
+    queryBuilder.orderBy(
+      `b.${sortBy}`,
+      sortDirection.toUpperCase() as 'ASC' | 'DESC',
     );
-    const totalCount = parseInt(totalCountResult[0].count, 10);
+    queryBuilder.skip((pageNumber - 1) * pageSize).take(pageSize);
 
-    const offset = (pageNumber - 1) * pageSize;
-
-    const items = await this.dataSource.query(
-      `
-        SELECT *
-        FROM blogs
-               ${filterQuery}
-        ORDER BY "${sortBy}" ${sortDirection.toUpperCase()}
-        OFFSET $${filterParam.length + 1} LIMIT $${filterParam.length + 2}
-      `,
-      [...filterParam, offset, pageSize],
-    );
+    const [items, totalCount] = await queryBuilder.getManyAndCount();
 
     return {
       pagesCount: Math.ceil(totalCount / pageSize),
@@ -134,83 +97,50 @@ export class BlogsRepository {
     if (!blog) return null;
 
     const { pageNumber, pageSize, sortBy, sortDirection } = params;
-    const offset = (pageNumber - 1) * pageSize;
 
-    // 1. Общее количество постов в блоге
-    const totalCountResult = await this.dataSource.query(
-      `SELECT COUNT(*) as count FROM posts WHERE "blogId" = $1`,
-      [blogId],
-    );
-    const totalCount = parseInt(totalCountResult[0].count, 10);
-
-    // 2. Получаем сами посты с пагинацией и сортировкой
-    const posts = await this.dataSource.query(
-      `
-        SELECT * FROM posts
-        WHERE "blogId" = $1
-        ORDER BY "${sortBy}" ${sortDirection.toUpperCase()}
-        OFFSET $2 LIMIT $3
-      `,
-      [blogId, offset, pageSize],
-    );
-
-    // 3. Лайки текущего пользователя (только для нужных постов)
-    const userLikesMap = new Map<string, string>(); // или LikeStatus, если у вас есть enum
+    const queryBuilder = this.postsRepository
+      .createQueryBuilder('p')
+      .where('p.blogId = :blogId', { blogId })
+      .orderBy(`p.${sortBy}`, sortDirection.toUpperCase() as 'ASC' | 'DESC')
+      .skip((pageNumber - 1) * pageSize)
+      .take(pageSize);
 
     if (currentUserId) {
-      const myLikes = await this.dataSource.query(
-        `
-          SELECT "parentId", status
-          FROM likes
-          WHERE "parentType" = 'Post'
-            AND "authorId" = $1
-            AND "parentId" = ANY($2)
-        `,
-        [currentUserId, posts.map(p => p.id)],
-      );
-
-      myLikes.forEach((like) => {
-        userLikesMap.set(like.parentId, like.status);
-      });
+      queryBuilder.addSelect((subQuery) => {
+        return subQuery
+          .select('l.status', 'myStatus')
+          .from(Like, 'l')
+          .where('l.parentId = p.id')
+          .andWhere('l.parentType = :parentType', { parentType: 'Post' })
+          .andWhere('l.authorId = :currentUserId', { currentUserId });
+      }, 'myStatus');
     }
 
-    // 4. Формируем ответ в стиле findAll
-    const items = posts.map((post) => {
-      // Если в таблице posts есть колонка extendedLikesInfo (jsonb) — используем её
-      // Если нет — считаем на лету (рекомендую второй вариант для консистентности)
+    const result = await queryBuilder.getRawAndEntities();
+    const posts = result.entities;
+    const rawData = result.raw;
 
-      // Вариант А: если extendedLikesInfo хранится в таблице posts (как в findAll)
-      let extendedLikesInfoFromDb =
-        typeof post.extendedLikesInfo === 'string'
-          ? JSON.parse(post.extendedLikesInfo)
-          : post.extendedLikesInfo ?? { likesCount: 0, dislikesCount: 0, newestLikes: [] };
+    const items = posts.map((post, index) => {
+      const raw = rawData[index];
+      const myStatus = raw.myStatus || LikeStatus.None;
 
-      // Сортируем newestLikes по убыванию даты (если они уже есть)
-      const newestLikes = Array.isArray(extendedLikesInfoFromDb.newestLikes)
-        ? [...extendedLikesInfoFromDb.newestLikes].sort(
-          (a, b) => new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime(),
-        ).slice(0, 3) // на всякий случай обрезаем до 3
-        : [];
-
-      return {
+      return mapPostToView({
         ...post,
         extendedLikesInfo: {
-          likesCount: extendedLikesInfoFromDb.likesCount ?? 0,
-          dislikesCount: extendedLikesInfoFromDb.dislikesCount ?? 0,
-          myStatus: currentUserId
-            ? userLikesMap.get(post.id) ?? 'None'   // или LikeStatus.None
-            : 'None',
-          newestLikes,
+          ...post.extendedLikesInfo,
+          myStatus,
         },
-      };
+      } as any);
     });
+
+    const totalCount = await queryBuilder.getCount();
 
     return {
       pagesCount: Math.ceil(totalCount / pageSize),
       page: pageNumber,
       pageSize,
       totalCount,
-      items: items.map(mapPostToView),
+      items,
     };
   }
 
@@ -218,34 +148,11 @@ export class BlogsRepository {
     blog: Blog,
     dto: CreatePostForBlogInputModel,
   ): Promise<Post> {
-    const id = uuidv4();
-    const createdAt = new Date();
-
-    await this.dataSource.query(
-      `INSERT INTO posts
-       (id, title, "shortDescription", content, "blogId", "blogName", "createdAt", "extendedLikesInfo")
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb)`,
-      [
-        id,
-        dto.title,
-        dto.shortDescription,
-        dto.content,
-        blog.id,
-        blog.name,
-        createdAt,
-        JSON.stringify({ likesCount: 0, dislikesCount: 0, newestLikes: [] }),
-      ],
-    );
-
-    return {
-      id,
-      title: dto.title,
-      shortDescription: dto.shortDescription,
-      content: dto.content,
+    const post = Post.create({
+      ...dto,
       blogId: blog.id,
       blogName: blog.name,
-      createdAt,
-      extendedLikesInfo: { likesCount: 0, dislikesCount: 0, newestLikes: [] },
-    } as unknown as Post;
+    });
+    return await this.postsRepository.save(post);
   }
 }

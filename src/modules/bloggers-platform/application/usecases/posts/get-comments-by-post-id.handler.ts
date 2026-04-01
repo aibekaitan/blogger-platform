@@ -1,13 +1,11 @@
-// get-comments-by-post-id.query.ts
 import { Query } from '@nestjs/cqrs';
-
 import { QueryHandler, IQueryHandler } from '@nestjs/cqrs';
 import { NotFoundException } from '@nestjs/common';
 import { CommentViewModel } from '../../../dto/comments.dto';
 import { IPagination } from '../../../../../common/types/pagination';
 import { CommentsQueryFieldsType } from '../../../types/comments.queryFields.type';
 import { PostRepository } from '../../../infrastructure/posts.repository';
-import { PostQueryRepository } from '../../../infrastructure/query-repo/posts.query.repository';
+import { CommentsQueryRepository } from '../../../infrastructure/query-repo/comments.query.repository';
 import { sortQueryFieldsUtil } from '../../../../../common/utils/sortQueryFields.util';
 
 export class GetCommentsByPostIdQuery extends Query<
@@ -21,6 +19,7 @@ export class GetCommentsByPostIdQuery extends Query<
     super();
   }
 }
+
 @QueryHandler(GetCommentsByPostIdQuery)
 export class GetCommentsByPostIdHandler implements IQueryHandler<
   GetCommentsByPostIdQuery,
@@ -28,16 +27,13 @@ export class GetCommentsByPostIdHandler implements IQueryHandler<
 > {
   constructor(
     private readonly postRepository: PostRepository,
-    private readonly postQueryRepository: PostQueryRepository,
+    private readonly commentsQueryRepository: CommentsQueryRepository,
   ) {}
 
   async execute(query: GetCommentsByPostIdQuery) {
     const { postId, query: q, currentUserId } = query;
 
-    const postExists = await this.postRepository.findById(
-      postId,
-      currentUserId,
-    );
+    const postExists = await this.postRepository.findById(postId);
     if (!postExists) {
       throw new NotFoundException('Post not found');
     }
@@ -45,7 +41,7 @@ export class GetCommentsByPostIdHandler implements IQueryHandler<
     const { pageNumber, pageSize, sortBy, sortDirection } =
       sortQueryFieldsUtil(q);
 
-    return this.postQueryRepository.findAllCommentsByPostId(
+    return this.commentsQueryRepository.findAllByPostId(
       postId,
       { pageNumber, pageSize, sortBy, sortDirection },
       currentUserId,

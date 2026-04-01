@@ -1,9 +1,14 @@
+import { Blog } from './blog.entity';
+import { Comment } from './comment.entity';
 import {
   Entity,
   Column,
   PrimaryGeneratedColumn,
   CreateDateColumn,
   Index,
+  ManyToOne,
+  JoinColumn,
+  OneToMany,
 } from 'typeorm';
 
 interface NewestLike {
@@ -27,11 +32,20 @@ export class Post {
   @Column({ type: 'text', nullable: false })
   content: string;
 
+  @ManyToOne(() => Blog, (blog) => blog.posts, {
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn({ name: 'blogId' })
+  blog: Blog;
+
   @Column({ type: 'uuid', nullable: false })
   blogId: string;
 
   @Column({ type: 'varchar', length: 255, nullable: false })
   blogName: string;
+
+  @OneToMany(() => Comment, (comment) => comment.post)
+  comments: Comment[];
 
   @CreateDateColumn({ type: 'timestamp' })
   createdAt: Date;
@@ -70,7 +84,6 @@ export class Post {
     return post;
   }
 
-
   updateContent(
     title?: string,
     shortDescription?: string,
@@ -81,7 +94,6 @@ export class Post {
       this.shortDescription = shortDescription.trim();
     if (content?.trim()) this.content = content;
   }
-
 
   updateLikesInfo(
     likesCount: number,

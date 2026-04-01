@@ -1,9 +1,13 @@
+import { Post } from './post.entity';
+import { User } from '../../user-accounts/domain/user.entity';
 import {
   Entity,
   Column,
   PrimaryGeneratedColumn,
   CreateDateColumn,
   Index,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 
 @Entity('comments')
@@ -12,11 +16,19 @@ export class Comment {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @ManyToOne(() => Post, (post) => post.comments, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'postId' })
+  post: Post;
+
   @Column({ type: 'uuid', nullable: false })
   postId: string;
 
   @Column({ type: 'text', nullable: false })
   content: string;
+
+  @ManyToOne(() => User, (user) => user.comments, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'userId' })
+  user: User;
 
   @Column({ type: 'uuid', nullable: false })
   userId: string;
@@ -26,8 +38,6 @@ export class Comment {
 
   @CreateDateColumn({ type: 'timestamp' })
   createdAt: Date;
-
-
 
   static create(dto: {
     postId: string;
@@ -44,8 +54,6 @@ export class Comment {
 
     return comment;
   }
-
-
 
   updateContent(content: string) {
     if (content?.trim()) {

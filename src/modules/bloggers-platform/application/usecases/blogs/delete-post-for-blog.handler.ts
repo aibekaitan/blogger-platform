@@ -23,9 +23,7 @@ export class DeletePostForBlogHandler implements ICommandHandler<
 
     if (!post) return false;
 
-
     const deleted = await this.postRepository.delete(postId);
     return deleted;
-
   }
 }

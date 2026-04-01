@@ -32,7 +32,6 @@ export class Like {
   @Prop({ type: String, default: 'Comment' })
   parentType: string;
 
-
   get id(): string {
     return this._id?.toString();
   }
