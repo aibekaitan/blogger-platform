@@ -39,7 +39,7 @@ export class UsersRepository {
   async findUserByConfirmationCode(code: string): Promise<User | null> {
     return await this.usersRepository
       .createQueryBuilder('u')
-      .where("u.emailConfirmation->>'confirmationCode' = :code", { code })
+      .where(`u."emailConfirmation"->>'confirmationCode' = :code`, { code })
       .getOne();
   }
 
