@@ -74,14 +74,14 @@ export class PostRepository {
       .take(pageSize);
 
     if (currentUserId) {
-      queryBuilder.addSelect((subQuery) => {
-        return subQuery
-          .select('l.status', 'myStatus')
-          .from(Like, 'l')
-          .where('l.parentId = p.id')
-          .andWhere('l.parentType = :parentType', { parentType: 'Post' })
-          .andWhere('l.authorId = :currentUserId', { currentUserId });
-      }, 'myStatus');
+      queryBuilder
+        .leftJoin(
+          Like,
+          'l',
+          'l.parentId = p.id AND l.parentType = :parentType AND l.authorId = :currentUserId',
+          { parentType: 'Post', currentUserId },
+        )
+        .addSelect('l.status', 'myStatus');
     }
 
     const result = await queryBuilder.getRawAndEntities();
@@ -163,7 +163,11 @@ export class PostRepository {
     // Add new status impact
     if (likeStatus === LikeStatus.Like) {
       likesCount++;
-      newestLikes.unshift({ addedAt: new Date().toISOString(), userId, login: user.login });
+      newestLikes.unshift({
+        addedAt: new Date().toISOString(),
+        userId,
+        login: user.login,
+      });
       newestLikes = newestLikes.slice(0, 3);
     }
     if (likeStatus === LikeStatus.Dislike) dislikesCount++;
@@ -186,7 +190,11 @@ export class PostRepository {
         status: likeStatus,
         parentType: 'Post',
       });
-      await this.likesRepository.upsert(like, ['authorId', 'parentId', 'parentType']);
+      await this.likesRepository.upsert(like, [
+        'authorId',
+        'parentId',
+        'parentType',
+      ]);
     }
   }
 
@@ -200,4 +208,3 @@ export class PostRepository {
     return this.postsRepository.save(post);
   }
 }
-
