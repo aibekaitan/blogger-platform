@@ -15,12 +15,12 @@ import { APP_GUARD } from '@nestjs/core';
   imports: [
     configModule,
     CoreModule, //запускает конфиг вообще везде за счет @Global
-    ThrottlerModule.forRoot([
-      {
-        ttl: 10000, // 10 секунд
-        limit: 5, // максимум 5 запросов
-      },
-    ]),
+    // ThrottlerModule.forRoot([
+    //   {
+    //     ttl: 10000, // 10 секунд
+    //     limit: 5, // максимум 5 запросов
+    //   },
+    // ]),
     TypeOrmModule.forRootAsync({
       useFactory: (coreConfig: CoreConfig) => {
         return {
@@ -47,10 +47,10 @@ import { APP_GUARD } from '@nestjs/core';
   controllers: [AppController],
   providers: [
     AppService,
-    {
-      provide: APP_GUARD,
-      useClass: ThrottlerGuard, // применяется глобально
-    },
+    // {
+    //   provide: APP_GUARD,
+    //   useClass: ThrottlerGuard, // применяется глобально
+    // },
   ],
 })
 export class AppModule {
