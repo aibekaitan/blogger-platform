@@ -74,15 +74,31 @@ export class PostRepository {
       .take(pageSize);
 
     if (currentUserId) {
-      queryBuilder
-        .leftJoin(
-          Like,
-          'l',
-          'l.parentId = p.id AND l.parentType = :parentType AND l.authorId = :currentUserId',
-          { parentType: 'Post', currentUserId },
-        )
-        .addSelect('l.status', 'myStatus');
+      queryBuilder.addSelect((subQuery) => {
+        return subQuery
+          .select('l.status', 'myStatus')
+          .from(Like, 'l')
+          .where('l.parentId = p.id')
+          .andWhere('l.parentType = :parentType', { parentType: 'Post' })
+          .andWhere('l.authorId = :currentUserId', { currentUserId });
+      }, 'myStatus');
     }
+    // const queryBuilder = this.postsRepository
+    //   .createQueryBuilder('p')
+    //   .orderBy(`p.${sortBy}`, sortDirection.toUpperCase() as 'ASC' | 'DESC')
+    //   .skip((pageNumber - 1) * pageSize)
+    //   .take(pageSize);
+    //
+    // if (currentUserId) {
+    //   queryBuilder
+    //     .leftJoin(
+    //       Like,
+    //       'l',
+    //       'l.parentId = p.id AND l.parentType = :parentType AND l.authorId = :currentUserId',
+    //       { parentType: 'Post', currentUserId }
+    //     )
+    //     .addSelect('l.status', 'myStatus');
+    // }
 
     const result = await queryBuilder.getRawAndEntities();
     const posts = result.entities;

@@ -40,8 +40,6 @@ export class CommentsQueryRepository {
     } = sortQueryDto;
 
     const skip = (pageNumber - 1) * pageSize;
-
-    // Allowed sort fields
     const allowedSortFields = ['createdAt', 'content', 'userLogin'];
     const safeSortBy = allowedSortFields.includes(sortBy)
       ? sortBy
@@ -54,8 +52,6 @@ export class CommentsQueryRepository {
       .take(pageSize)
       .skip(skip);
 
-    // Get counts and user status using subqueries or joins
-    // Subqueries are easier for polymorphic relations in TypeORM sometimes
     queryBuilder.addSelect((subQuery) => {
       return subQuery
         .select('count(*)', 'likesCount')
